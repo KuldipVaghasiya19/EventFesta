@@ -45,7 +45,10 @@ public class Organization {
 
     private String contact;
 
-    private String profileImg;
+    private String profileImageUrl;
+
+    private String profileImagePublicId;
+
 
     private int totalOrganizedEvents;
 
@@ -139,12 +142,20 @@ public class Organization {
         this.contact = contact;
     }
 
-    public String getProfileImg() {
-        return profileImg;
+    public String getProfileImageUrl() {
+        return profileImageUrl;
     }
 
-    public void setProfileImg(String profileImg) {
-        this.profileImg = profileImg;
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public String getProfileImagePublicId() {
+        return profileImagePublicId;
+    }
+
+    public void setProfileImagePublicId(String profileImagePublicId) {
+        this.profileImagePublicId = profileImagePublicId;
     }
 
     public List<Event> getOrganizedEvents() {

@@ -67,7 +67,6 @@ public class ParticipantService {
                     participant.setName(participantDetails.getName());
                     participant.setUniversity(participantDetails.getUniversity());
                     participant.setCourse(participantDetails.getCourse());
-                    participant.setImgUrl(participantDetails.getImgUrl());
                     participant.setCurrentlyStudyingOrNot(participantDetails.isCurrentlyStudyingOrNot());
                     return participantRepository.save(participant);
                 })

@@ -37,7 +37,9 @@ public class Participant {
     @NonNull
     private String course;
 
-    private String imgUrl;
+    private String profileImageUrl;
+
+    private String profileImagePublicId;
 
     private boolean currentlyStudyingOrNot;
 
@@ -93,12 +95,20 @@ public class Participant {
         this.course = course;
     }
 
-    public String getImgUrl() {
-        return imgUrl;
+    public String getProfileImageUrl() {
+        return profileImageUrl;
     }
 
-    public void setImgUrl(String imgUrl) {
-        this.imgUrl = imgUrl;
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public String getProfileImagePublicId() {
+        return profileImagePublicId;
+    }
+
+    public void setProfileImagePublicId(String profileImagePublicId) {
+        this.profileImagePublicId = profileImagePublicId;
     }
 
     public boolean isCurrentlyStudyingOrNot() {

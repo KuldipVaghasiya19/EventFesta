@@ -15,9 +15,10 @@ public class ImageUploadService {
     @Autowired
     private Cloudinary cloudinary;
 
-    public String uploadImage(MultipartFile file) throws IOException {
+    // Upload image and return full result Map from Cloudinary
+    public Map<String, String> uploadImage(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap("resource_type", "auto"));
-        return uploadResult.get("secure_url").toString();
+        return (Map<String, String>) uploadResult;
     }
 }
