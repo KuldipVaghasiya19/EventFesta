@@ -27,7 +27,14 @@ export const events = [
       }
     ],
     "participants": [],
-    "judges": [],
+    "judges": [
+      {
+        "name": "Karan Mehta",
+        "role": "CTO",
+        "company": "NextGenTech",
+        "image": "https://randomuser.me/api/portraits/men/71.jpg"
+      }
+    ],
     "prizes": ["Best Pitch: ₹1,00,000", "Audience Favorite: ₹50,000"],
     "schedule": [
       {
@@ -64,7 +71,14 @@ export const events = [
       }
     ],
     "participants": [],
-    "judges": [],
+   "judges": [
+      {
+        "name": "Karan Mehta",
+        "role": "CTO",
+        "company": "NextGenTech",
+        "image": "https://randomuser.me/api/portraits/men/71.jpg"
+      }
+    ],
     "prizes": ["Best Analyst Award: ₹75,000"],
     "schedule": [
       {
@@ -79,13 +93,13 @@ export const events = [
     "title": "HackNexus 2025",
     "type": "hackathon",
     "description": "48-hour intense coding challenge for students and developers. Build solutions on real-world problems using AI, FinTech, and Web3 technologies.",
-    "date": "2025-01-05T08:00:00",
+    "date": "2024-01-05T08:00:00",
     "maxParticipants": 200,
     "currentParticipants": 192,
     "location": "IIT Delhi",
     "tags": ["Hackathon", "AI", "Web3", "FinTech"],
     "image": "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1470&q=80",
-    "prices": ["Free"],
+    "prices": ["Entry - ₹0"],
     "earlyBirdDeadline": "2024-12-10",
     "speakers": [],
     "participants": [],
@@ -106,7 +120,7 @@ export const events = [
       {
         "time": "08:00 - 08:30",
         "title": "Welcome & Briefing",
-        "speaker": ""
+        "speaker": "ABC"
       }
     ]
   },
@@ -115,7 +129,7 @@ export const events = [
     "title": "DesignCon 2025",
     "type": "conference",
     "description": "Explore the future of design with top UX/UI professionals. Hands-on sessions, interactive panels, and portfolio reviews await designers of all levels.",
-    "date": "2025-02-10T10:00:00",
+    "date": "2024-07-10T10:00:00",
     "maxParticipants": 250,
     "currentParticipants": 130,
     "location": "Chennai International Design Center",
@@ -292,3 +306,4 @@ export const events = [
     "schedule": []
   }
 ]
+export default events;

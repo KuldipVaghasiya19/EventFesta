@@ -52,7 +52,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-6">
             <Link 
               to="/" 
-              className={`font-medium transition-colors ${
+              className={`font-medium transition-all duration-300 relative group ${
                 location.pathname === '/' 
                   ? 'text-primary-500' 
                   : isScrolled 
@@ -61,10 +61,13 @@ const Navbar = () => {
               }`}
             >
               Home
+              <span className={`absolute bottom-0 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full ${
+                location.pathname === '/' ? 'w-full' : ''
+              }`}></span>
             </Link>
             <Link 
               to="/events" 
-              className={`font-medium transition-colors ${
+              className={`font-medium transition-all duration-300 relative group ${
                 location.pathname === '/events' 
                   ? 'text-primary-500' 
                   : isScrolled 
@@ -73,10 +76,13 @@ const Navbar = () => {
               }`}
             >
               Events
+              <span className={`absolute bottom-0 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full ${
+                location.pathname === '/events' ? 'w-full' : ''
+              }`}></span>
             </Link>
             <Link 
               to="/about" 
-              className={`font-medium transition-colors ${
+              className={`font-medium transition-all duration-300 relative group ${
                 location.pathname === '/about' 
                   ? 'text-primary-500' 
                   : isScrolled 
@@ -85,10 +91,13 @@ const Navbar = () => {
               }`}
             >
               About Us
+              <span className={`absolute bottom-0 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full ${
+                location.pathname === '/about' ? 'w-full' : ''
+              }`}></span>
             </Link>
             <Link 
               to="/contact" 
-              className={`font-medium transition-colors ${
+              className={`font-medium transition-all duration-300 relative group ${
                 location.pathname === '/contact' 
                   ? 'text-primary-500' 
                   : isScrolled 
@@ -97,45 +106,49 @@ const Navbar = () => {
               }`}
             >
               Contact Us
+              <span className={`absolute bottom-0 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full ${
+                location.pathname === '/contact' ? 'w-full' : ''
+              }`}></span>
             </Link>
 
             {/* Auth Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsAuthDropdownOpen(!isAuthDropdownOpen)}
-                className={`flex items-center font-medium transition-colors ${
+                className={`flex items-center font-medium transition-all duration-300 relative group ${
                   isScrolled 
                     ? 'text-gray-800 hover:text-primary-500'
                     : 'text-white hover:text-primary-400'
                 }`}
               >
                 Login/Signup <ChevronDown className="ml-1 h-4 w-4" />
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
               </button>
               
               {isAuthDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 animate-fade-in">
                   <Link 
                     to="/login?role=participant" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500 transition-colors"
                   >
                     Login as Participant
                   </Link>
                   <Link 
                     to="/login?role=organization" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500 transition-colors"
                   >
                     Login as Organization
                   </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <Link 
                     to="/signup?role=participant" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500 transition-colors"
                   >
                     Signup as Participant
                   </Link>
                   <Link 
                     to="/signup?role=organization" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500 transition-colors"
                   >
                     Signup as Organization
                   </Link>
@@ -197,25 +210,25 @@ const Navbar = () => {
                 <p className="text-sm font-medium text-gray-500 mb-2">Login/Signup</p>
                 <Link 
                   to="/login?role=participant" 
-                  className="block py-1.5 text-gray-700 hover:text-primary-500"
+                  className="block py-1.5 text-gray-700 hover:text-primary-500 transition-colors"
                 >
                   Login as Participant
                 </Link>
                 <Link 
                   to="/login?role=organization" 
-                  className="block py-1.5 text-gray-700 hover:text-primary-500"
+                  className="block py-1.5 text-gray-700 hover:text-primary-500 transition-colors"
                 >
                   Login as Organization
                 </Link>
                 <Link 
                   to="/signup?role=participant" 
-                  className="block py-1.5 text-gray-700 hover:text-primary-500"
+                  className="block py-1.5 text-gray-700 hover:text-primary-500 transition-colors"
                 >
                   Signup as Participant
                 </Link>
                 <Link 
                   to="/signup?role=organization" 
-                  className="block py-1.5 text-gray-700 hover:text-primary-500"
+                  className="block py-1.5 text-gray-700 hover:text-primary-500 transition-colors"
                 >
                   Signup as Organization
                 </Link>

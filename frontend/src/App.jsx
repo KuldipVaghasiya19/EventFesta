@@ -10,6 +10,7 @@ import SignupPage from './pages/SignupPage';
 import EventDetailPage from './pages/EventDetailPage';
 import ParticipantDashboard from './pages/ParticipantDashboard';
 import OrganizationDashboard from './pages/OrganizationDashboard';
+import CreateEventPage from './pages/CreateEventPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/events" element={<EventsPage />} />
+          <Route path="/events/create" element={<CreateEventPage />} />
           <Route path="/events/:id" element={<EventDetailPage />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
@@ -27,8 +29,6 @@ function App() {
           <Route path="/dashboard/participant" element={<ParticipantDashboard />} />
           <Route path="/dashboard/organization" element={<OrganizationDashboard />} />
         </Routes>
-        {/* <ParticipantDashboard/> */}
-        {/* <OrganizationDashboard/> */}
       </main>
       <Footer />
     </div>
