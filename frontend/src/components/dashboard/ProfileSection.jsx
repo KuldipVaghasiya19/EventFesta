@@ -1,4 +1,5 @@
 import { Mail, MapPin, Building, GraduationCap, Edit, Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ProfileSection = ({ 
   user, 
@@ -85,10 +86,10 @@ const ProfileSection = ({
 
               {/* Edit Button */}
               <div className="pb-4">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors backdrop-blur-sm">
+                  <Link to="/profile/update" className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors backdrop-blur-sm shadow-sm font-medium">
                   <Edit className="h-4 w-4" />
-                  Edit Profile
-                </button>
+                    Edit Profile
+                  </Link>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import CreateEventForm from '../components/forms/CreateEventForm';
+import CreateEventForm from '../../components/forms/CreateEventForm';
 
 const CreateEventPage = () => {
   const navigate = useNavigate();

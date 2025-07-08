@@ -13,7 +13,7 @@ const ContactUsPage = () => {
   
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Contact Us - TechEvents";
+    document.title = "Contact Us - EventFesta";
   }, []);
   
   const validateForm = () => {
@@ -107,11 +107,11 @@ const ContactUsPage = () => {
                       <div>
                         <h3 className="font-bold mb-1">Email Us</h3>
                         <p className="text-primary-100">
-                          <a href="mailto:info@techevents.com" className="hover:underline">
-                            info@techevents.com
+                          <a href="mailto:info@eventfesta.com" className="hover:underline">
+                            info@eventfesta.com
                           </a><br />
-                          <a href="mailto:support@techevents.com" className="hover:underline">
-                            support@techevents.com
+                          <a href="mailto:support@eventfesta.com" className="hover:underline">
+                            support@eventfesta.com
                           </a>
                         </p>
                       </div>
@@ -377,7 +377,7 @@ const ContactUsPage = () => {
               Didn't find what you're looking for?
             </p>
             <a 
-              href="mailto:support@techevents.com" 
+              href="mailto:support@eventfesta.com" 
               className="text-primary-600 font-medium hover:text-primary-700 transition-colors"
             >
               Email our support team

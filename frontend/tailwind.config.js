@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -40,6 +41,19 @@ export default {
           800: '#86198f',
           900: '#701a75',
         },
+        // Dark theme colors
+        dark: {
+          50: '#1e293b',
+          100: '#334155',
+          200: '#475569',
+          300: '#64748b',
+          400: '#94a3b8',
+          500: '#cbd5e1',
+          600: '#e2e8f0',
+          700: '#f1f5f9',
+          800: '#f8fafc',
+          900: '#ffffff',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -72,6 +86,10 @@ export default {
       boxShadow: {
         'profile': '0 0 50px -12px rgba(0, 0, 0, 0.25)',
         'hover': '0 20px 40px -12px rgba(0, 0, 0, 0.1)',
+      },
+      backgroundColor: {
+        'dark-primary': '#1e293b',
+        'dark-secondary': '#334155',
       },
     },
   },

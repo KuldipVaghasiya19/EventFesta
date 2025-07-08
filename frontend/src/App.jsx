@@ -2,15 +2,18 @@ import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
-import EventsPage from './pages/EventsPage';
+import EventsPage from './pages/Events/EventsPage';
 import AboutUsPage from './pages/AboutUsPage';
 import ContactUsPage from './pages/ContactUsPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import EventDetailPage from './pages/EventDetailPage';
-import ParticipantDashboard from './pages/ParticipantDashboard';
-import OrganizationDashboard from './pages/OrganizationDashboard';
-import CreateEventPage from './pages/CreateEventPage';
+import EventDetailPage from './pages/Events/EventDetailPage';
+import EventRegistrationPage from './pages/Events/EventRegistrationPage';
+import ParticipantDashboard from './pages/Participant/ParticipantDashboard';
+import OrganizationDashboard from './pages/Organization/OrganizationDashboard';
+import CreateEventPage from './pages/Events/CreateEventPage';
+import ProfileUpdatePage from './pages/Organization/ProfileUpdatePage';
+import ParticipantListPage from './pages/Organization/ParticipantListPage';
 
 function App() {
   return (
@@ -22,12 +25,15 @@ function App() {
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/create" element={<CreateEventPage />} />
           <Route path="/events/:id" element={<EventDetailPage />} />
+          <Route path="/events/:id/register" element={<EventRegistrationPage />} />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard/participant" element={<ParticipantDashboard />} />
           <Route path="/dashboard/organization" element={<OrganizationDashboard />} />
+          <Route path="/profile/update" element={<ProfileUpdatePage />} />
+          <Route path="/participants/:eventId" element={<ParticipantListPage />} />
         </Routes>
       </main>
       <Footer />

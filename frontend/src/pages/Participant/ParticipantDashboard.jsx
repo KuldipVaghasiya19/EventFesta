@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { events } from '../data/events';
-import ProfileSection from '../components/dashboard/ProfileSection';
-import TabNavigation from '../components/dashboard/TabNavigation';
-import InterestsSection from '../components/dashboard/InterestsSection';
-import EventsSection from '../components/dashboard/EventsSection';
+import { events } from '../../data/events';
+import ProfileSection from '../../components/dashboard/ProfileSection';
+import TabNavigation from '../../components/dashboard/TabNavigation';
+import InterestsSection from '../../components/dashboard/InterestsSection';
+import EventsSection from '../../components/dashboard/EventsSection';
 
 const ParticipantDashboard = () => {
   const [activeTab, setActiveTab] = useState('events');

@@ -5,7 +5,7 @@ import { Briefcase, Award, Users, Clock, MapPin, Calendar, Check, ArrowRight } f
 const AboutUsPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "About Us - TechEvents";
+    document.title = "About Us - EventFesta";
   }, []);
 
   return (
@@ -15,10 +15,10 @@ const AboutUsPage = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-display font-bold mb-6 leading-tight">
-              Building Connections in the Tech Community
+              Building Connections Through Amazing Events
             </h1>
             <p className="text-xl text-primary-100 mb-8">
-              We're on a mission to bring tech professionals together through exceptional events that inspire innovation and foster collaboration.
+              We're on a mission to bring people together through exceptional events that inspire, educate, and foster meaningful connections.
             </p>
           </div>
         </div>
@@ -33,13 +33,13 @@ const AboutUsPage = () => {
                 Our <span className="text-primary-500">Story</span>
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                TechEvents was founded in 2020 by a group of tech enthusiasts who were frustrated with the fragmented nature of tech event discovery and management. We saw a need for a centralized platform that could connect tech professionals with quality events while giving organizers the tools they needed to succeed.
+                EventFesta was founded in 2020 by a group of event enthusiasts who were frustrated with the fragmented nature of event discovery and management. We saw a need for a centralized platform that could connect people with quality events while giving organizers the tools they needed to succeed.
               </p>
               <p className="text-lg text-gray-600 mb-6">
-                What started as a simple event listing website has evolved into a comprehensive platform that serves thousands of tech professionals and organizers worldwide. Our team's passion for technology and community building drives everything we do.
+                What started as a simple event listing website has evolved into a comprehensive platform that serves thousands of event enthusiasts and organizers worldwide. Our team's passion for bringing people together drives everything we do.
               </p>
               <p className="text-lg text-gray-600">
-                Today, we're proud to be the leading destination for tech event discovery, with a growing community of users who share our vision of a more connected and collaborative tech ecosystem.
+                Today, we're proud to be the leading destination for event discovery, with a growing community of users who share our vision of a more connected and collaborative world.
               </p>
             </div>
             <div className="relative">
@@ -57,7 +57,7 @@ const AboutUsPage = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900">5+ Years</h4>
-                    <p className="text-gray-600 text-sm">Connecting the tech community</p>
+                    <p className="text-gray-600 text-sm">Connecting communities worldwide</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -66,7 +66,7 @@ const AboutUsPage = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900">50,000+</h4>
-                    <p className="text-gray-600 text-sm">Tech professionals in our network</p>
+                    <p className="text-gray-600 text-sm">Event enthusiasts in our network</p>
                   </div>
                 </div>
               </div>
@@ -83,7 +83,7 @@ const AboutUsPage = () => {
               Our <span className="text-primary-500">Mission</span>
             </h2>
             <p className="text-lg text-gray-600">
-              We're driven by the belief that meaningful connections and knowledge sharing drive innovation in the tech industry. Our platform exists to:
+              We're driven by the belief that meaningful connections and knowledge sharing drive innovation and growth. Our platform exists to:
             </p>
           </div>
           
@@ -91,7 +91,7 @@ const AboutUsPage = () => {
             {[
               {
                 title: "Connect Communities",
-                description: "Bring together tech professionals, experts, enthusiasts, and organizations through exceptional events.",
+                description: "Bring together professionals, experts, enthusiasts, and organizations through exceptional events.",
                 icon: <Users className="h-6 w-6" />
               },
               {
@@ -101,7 +101,7 @@ const AboutUsPage = () => {
               },
               {
                 title: "Foster Innovation",
-                description: "Create environments where knowledge sharing and collaboration lead to new ideas and opportunities.",
+                description: "Create environments where knowledge sharing and collaboration lead to new ideas, opportunities, and meaningful connections.",
                 icon: <Award className="h-6 w-6" />
               }
             ].map((item, index) => (
@@ -137,14 +137,14 @@ const AboutUsPage = () => {
               {[
                 {
                   year: "2020",
-                  title: "TechEvents Founded",
-                  description: "Started as a simple listing platform for tech events in San Francisco.",
+                  title: "EventFesta Founded",
+                  description: "Started as a simple listing platform for events in San Francisco.",
                   isLeft: true
                 },
                 {
                   year: "2021",
                   title: "National Expansion",
-                  description: "Expanded to cover tech events across the United States with enhanced search features.",
+                  description: "Expanded to cover events across the United States with enhanced search features.",
                   isLeft: false
                 },
                 {
@@ -167,8 +167,8 @@ const AboutUsPage = () => {
                 },
                 {
                   year: "2025",
-                  title: "TechEvents Community",
-                  description: "Introduced community features allowing professionals to connect beyond events.",
+                  title: "EventFesta Community",
+                  description: "Introduced community features allowing people to connect beyond events.",
                   isLeft: false
                 }
               ].map((milestone, index) => (
@@ -206,7 +206,7 @@ const AboutUsPage = () => {
               Meet Our <span className="text-primary-500">Team</span>
             </h2>
             <p className="text-lg text-gray-600">
-              The passionate individuals behind TechEvents who are dedicated to connecting the tech community
+              The passionate individuals behind EventFesta who are dedicated to connecting communities worldwide
             </p>
           </div>
           
@@ -263,7 +263,7 @@ const AboutUsPage = () => {
             {[
               {
                 value: "500+",
-                label: "Tech Events Monthly",
+                label: "Events Monthly",
                 icon: <Calendar className="h-8 w-8 mb-4 mx-auto text-primary-300" />
               },
               {
@@ -300,7 +300,7 @@ const AboutUsPage = () => {
               Our <span className="text-primary-500">Values</span>
             </h2>
             <p className="text-lg text-gray-600">
-              The principles that guide us in our mission to connect the tech community
+              The principles that guide us in our mission to connect communities worldwide
             </p>
           </div>
           
@@ -308,15 +308,15 @@ const AboutUsPage = () => {
             {[
               {
                 title: "Community First",
-                description: "We prioritize the needs of our community in every decision we make, ensuring our platform serves tech professionals and organizers effectively."
+                description: "We prioritize the needs of our community in every decision we make, ensuring our platform serves event enthusiasts and organizers effectively."
               },
               {
                 title: "Innovation",
-                description: "We continuously improve our platform with cutting-edge features that address the evolving needs of the tech event ecosystem."
+                description: "We continuously improve our platform with cutting-edge features that address the evolving needs of the event ecosystem."
               },
               {
                 title: "Inclusivity",
-                description: "We're committed to making tech events accessible to everyone, regardless of background, experience level, or location."
+                description: "We're committed to making events accessible to everyone, regardless of background, experience level, or location."
               },
               {
                 title: "Quality",
@@ -344,10 +344,10 @@ const AboutUsPage = () => {
             <div className="md:flex">
               <div className="md:w-1/2 p-8 md:p-12">
                 <h2 className="text-3xl font-display font-bold text-gray-900 mb-4">
-                  Join the TechEvents Community
+                  Join the EventFesta Community
                 </h2>
                 <p className="text-lg text-gray-600 mb-6">
-                  Whether you're looking to attend events or organize them, we're here to help you connect with the tech community.
+                  Whether you're looking to attend events or organize them, we're here to help you connect with amazing communities.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link 
@@ -378,8 +378,8 @@ const AboutUsPage = () => {
                     <div className="h-5 w-5 mr-3 flex items-center justify-center text-primary-300">
                       📧
                     </div>
-                    <a href="mailto:info@techevents.com" className="hover:underline">
-                      info@techevents.com
+                    <a href="mailto:info@eventfesta.com" className="hover:underline">
+                      info@eventfesta.com
                     </a>
                   </div>
                   <div className="flex items-center">
