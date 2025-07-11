@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Settings } from 'lucide-react';
-import { events } from '../../data/events';
 import ProfileSection from '../../components/dashboard/ProfileSection';
 import TabNavigation from '../../components/dashboard/TabNavigation';
 import EventsSection from '../../components/dashboard/EventsSection';
@@ -11,6 +10,7 @@ import AnalyticsSection from '../../components/dashboard/AnalyticsSection';
 const OrganizationDashboard = () => {
   const [activeTab, setActiveTab] = useState('events');
   const [organization, setOrganization] = useState(null);
+  const [organizationEvents, setOrganizationEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
@@ -68,6 +68,43 @@ const OrganizationDashboard = () => {
         };
         
         setOrganization(transformedData);
+        
+        // Set the organization's events
+        if (userData.organizedEvents && Array.isArray(userData.organizedEvents)) {
+          // Transform events to match your component's expected format
+          const transformedEvents = userData.organizedEvents.map(event => ({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            type: event.type,
+            date: new Date(event.eventDate).toISOString(),
+            eventDate: event.eventDate,
+            lastRegistrationDate: event.lastRegistertDate,
+            location: event.location,
+            registrationFees: event.registrationFees,
+            maxParticipants: event.maxParticipants,
+            currentParticipants: event.currentParticipants,
+            remainingSeats: event.remainingSeats,
+            imageUrl: event.imageUrl,
+            imagePublicId: event.imagePublicId,
+            tags: event.tags || [],
+            speakers: event.speakers || [],
+            judges: event.judges || [],
+            prizes: event.prizes || {},
+            schedule: event.schedule || [],
+            // Add any other fields your components expect
+            organizer: {
+              id: userData.id,
+              name: userData.name,
+              avatar: userData.profileImageUrl
+            }
+          }));
+          
+          setOrganizationEvents(transformedEvents);
+        } else {
+          setOrganizationEvents([]);
+        }
+        
         document.title = `${userData.name} Dashboard - TechEvents`;
       } else {
         // User is not an organization, redirect to appropriate dashboard
@@ -117,13 +154,35 @@ const OrganizationDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'events':
-        return <EventsSection events={events} userType="organization" organization={organization} />;
+        return (
+          <EventsSection 
+            events={organizationEvents} 
+            userType="organization" 
+            organization={organization} 
+          />
+        );
       case 'attendance':
-        return <AttendanceSection events={events} organization={organization} />;
+        return (
+          <AttendanceSection 
+            events={organizationEvents} 
+            organization={organization} 
+          />
+        );
       case 'analytics':
-        return <AnalyticsSection events={events} organization={organization} />;
+        return (
+          <AnalyticsSection 
+            events={organizationEvents} 
+            organization={organization} 
+          />
+        );
       default:
-        return <EventsSection events={events} userType="organization" organization={organization} />;
+        return (
+          <EventsSection 
+            events={organizationEvents} 
+            userType="organization" 
+            organization={organization} 
+          />
+        );
     }
   };
 

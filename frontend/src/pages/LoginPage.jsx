@@ -50,7 +50,10 @@ const LoginPage = () => {
   const loginUser = async (credentials) => {
     try {
       // Use specific endpoint based on role
-      const endpoint = role === 'organization' ? 'http://localhost:8080/api/auth/login/organization' : 'http://localhost:8080/api/auth/login/participant';
+      const endpoint = role === 'organization' 
+        ? 'http://localhost:8080/api/auth/login/organization' 
+        : 'http://localhost:8080/api/auth/login/participant';
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -62,17 +65,44 @@ const LoginPage = () => {
         }),
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        let errorMessage = 'Login failed';
+        
+        if (isJson) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (jsonError) {
+            // If JSON parsing fails, use default message
+            console.error('Failed to parse error response as JSON:', jsonError);
+          }
+        } else {
+          // Handle non-JSON responses
+          try {
+            const textResponse = await response.text();
+            errorMessage = textResponse || errorMessage;
+          } catch (textError) {
+            console.error('Failed to read error response as text:', textError);
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      const userData = await response.json();
-
-      console.log(userData.role);
-
-      return userData;
+      // Parse successful response
+      if (isJson) {
+        const userData = await response.json();
+        console.log('Login successful:', userData.role);
+        return userData;
+      } else {
+        throw new Error('Expected JSON response but received non-JSON content');
+      }
     } catch (error) {
+      console.error('Login request error:', error);
       throw error;
     }
   };

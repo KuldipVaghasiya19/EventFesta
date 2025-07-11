@@ -75,9 +75,26 @@ const EmptyState = ({ userType, activeTab }) => {
 const EventsSection = ({ events, userType = "participant" }) => {
   const [activeTab, setActiveTab] = useState('upcoming');
   
-  const upcomingEvents = events.filter(event => new Date(event.eventDate) >= new Date());
-  const registeredEvents = events;
-  const pastEvents = events.filter(event => new Date(event.eventDate) < new Date());
+  // Calculate event categories
+  const currentDate = new Date();
+  const upcomingEvents = events.filter(event => new Date(event.eventDate) >= currentDate);
+  const registeredEvents = events; // For participants, all events are registered events
+  const pastEvents = events.filter(event => new Date(event.eventDate) < currentDate);
+
+  // Calculate dynamic stats based on events data
+  const calculateStats = () => {
+    const totalEvents = events.length;
+    const upcomingCount = upcomingEvents.length;
+    const pastCount = pastEvents.length;
+
+    return {
+      totalEvents,
+      upcomingCount,
+      pastCount
+    };
+  };
+
+  const stats = calculateStats();
 
   const getEventsForTab = () => {
     switch (activeTab) {
@@ -474,22 +491,22 @@ const EventsSection = ({ events, userType = "participant" }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard 
             title="Total Events" 
-            count="3" 
-            subtitle="All registered events"
+            count={stats.totalEvents} 
+            subtitle={userType === 'organization' ? 'Events you organized' : 'All registered events'}
             icon={Calendar}
             color="purple"
           />
           <StatCard 
             title="Upcoming Events" 
-            count="1" 
-            subtitle="Events you'll attend"
+            count={stats.upcomingCount} 
+            subtitle={userType === 'organization' ? 'Events to be hosted' : 'Events you\'ll attend'}
             icon={Clock}
             color="blue"
           />
           <StatCard 
             title="Past Events" 
-            count="2" 
-            subtitle="Events you attended"
+            count={stats.pastCount} 
+            subtitle={userType === 'organization' ? 'Events you hosted' : 'Events you attended'}
             icon={Archive}
             color="green"
           />

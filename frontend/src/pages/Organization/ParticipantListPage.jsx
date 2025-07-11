@@ -1,165 +1,86 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Search, Filter, Users, Mail, Phone, MapPin, Calendar, FileText, Eye } from 'lucide-react';
-import { events } from '../../data/events';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Download, Search, Users, Mail, MapPin, GraduationCap, FileText, Calendar } from 'lucide-react';
 
-const ParticipantListPage = () => {
-  const { eventId } = useParams();
-  const event = events.find(e => e.id === eventId);
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+const ParticipantListComponent = ({ eventId, onBack }) => {
+  const [event, setEvent] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [filteredParticipants, setFilteredParticipants] = useState([]);
-
-  // Mock participant data
-  const participants = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      organization: 'Tech University',
-      designation: 'Computer Science Student',
-      location: 'San Francisco, CA',
-      registrationDate: '2024-10-15',
-      status: 'confirmed',
-      ticketType: 'Student',
-      paymentStatus: 'paid',
-      dietaryRestrictions: 'Vegetarian',
-      tshirtSize: 'M',
-      experience: 'Intermediate',
-      interests: ['React', 'JavaScript', 'AI'],
-      linkedinProfile: 'https://linkedin.com/in/johndoe',
-      githubProfile: 'https://github.com/johndoe'
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah.j@techcorp.com',
-      phone: '+1 (555) 234-5678',
-      organization: 'TechCorp Inc.',
-      designation: 'Senior Developer',
-      location: 'New York, NY',
-      registrationDate: '2024-10-12',
-      status: 'confirmed',
-      ticketType: 'Professional',
-      paymentStatus: 'paid',
-      dietaryRestrictions: 'None',
-      tshirtSize: 'S',
-      experience: 'Advanced',
-      interests: ['Python', 'Machine Learning', 'Data Science'],
-      linkedinProfile: 'https://linkedin.com/in/sarahjohnson',
-      githubProfile: 'https://github.com/sarahjohnson'
-    },
-    {
-      id: 3,
-      name: 'Michael Chen',
-      email: 'michael.chen@startup.io',
-      phone: '+1 (555) 345-6789',
-      organization: 'Startup.io',
-      designation: 'CTO',
-      location: 'Austin, TX',
-      registrationDate: '2024-10-10',
-      status: 'pending',
-      ticketType: 'Professional',
-      paymentStatus: 'pending',
-      dietaryRestrictions: 'Gluten-free',
-      tshirtSize: 'L',
-      experience: 'Expert',
-      interests: ['Blockchain', 'Web3', 'Startup'],
-      linkedinProfile: 'https://linkedin.com/in/michaelchen',
-      githubProfile: 'https://github.com/michaelchen'
-    },
-    {
-      id: 4,
-      name: 'Emily Davis',
-      email: 'emily.davis@university.edu',
-      phone: '+1 (555) 456-7890',
-      organization: 'State University',
-      designation: 'PhD Student',
-      location: 'Boston, MA',
-      registrationDate: '2024-10-08',
-      status: 'confirmed',
-      ticketType: 'Student',
-      paymentStatus: 'paid',
-      dietaryRestrictions: 'Vegan',
-      tshirtSize: 'M',
-      experience: 'Intermediate',
-      interests: ['Research', 'AI', 'Academia'],
-      linkedinProfile: 'https://linkedin.com/in/emilydavis',
-      githubProfile: 'https://github.com/emilydavis'
-    },
-    {
-      id: 5,
-      name: 'David Wilson',
-      email: 'david.w@freelance.com',
-      phone: '+1 (555) 567-8901',
-      organization: 'Freelancer',
-      designation: 'Full Stack Developer',
-      location: 'Seattle, WA',
-      registrationDate: '2024-10-05',
-      status: 'confirmed',
-      ticketType: 'Professional',
-      paymentStatus: 'paid',
-      dietaryRestrictions: 'None',
-      tshirtSize: 'XL',
-      experience: 'Advanced',
-      interests: ['Full Stack', 'DevOps', 'Cloud'],
-      linkedinProfile: 'https://linkedin.com/in/davidwilson',
-      githubProfile: 'https://github.com/davidwilson'
-    }
-  ];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    document.title = `Participants - ${event?.title || 'Event'} - TechEvents`;
+    fetchEventAndParticipants();
+  }, [eventId]);
+
+  useEffect(() => {
     filterParticipants();
-  }, [searchTerm, filterStatus, event]);
+  }, [searchTerm, participants]);
+
+  const fetchEventAndParticipants = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get user token from localStorage or sessionStorage
+      const user = JSON.parse(localStorage.getItem('techevents_user') || sessionStorage.getItem('techevents_user'));
+      const token = user?.token;
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Fetch event details with participants
+      const response = await fetch(`/api/events/${eventId}/participants`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch event participants');
+      }
+
+      const data = await response.json();
+      setEvent(data.event);
+      setParticipants(data.participants || []);
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching participants:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filterParticipants = () => {
-    let filtered = [...participants];
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(participant => 
-        participant.name.toLowerCase().includes(term) ||
-        participant.email.toLowerCase().includes(term) ||
-        participant.organization.toLowerCase().includes(term) ||
-        participant.designation.toLowerCase().includes(term)
-      );
+    if (!searchTerm) {
+      setFilteredParticipants(participants);
+      return;
     }
     
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(participant => participant.status === filterStatus);
-    }
+    const term = searchTerm.toLowerCase();
+    const filtered = participants.filter(participant => 
+      participant.name.toLowerCase().includes(term) ||
+      participant.email.toLowerCase().includes(term) ||
+      participant.course.toLowerCase().includes(term) ||
+      participant.university.toLowerCase().includes(term)
+    );
     
     setFilteredParticipants(filtered);
   };
 
   const exportToCSV = () => {
-    const headers = [
-      'Name', 'Email', 'Phone', 'Organization', 'Designation', 'Location',
-      'Registration Date', 'Status', 'Ticket Type', 'Payment Status',
-      'Dietary Restrictions', 'T-shirt Size', 'Experience Level', 'Interests'
-    ];
+    const headers = ['Name', 'Email', 'Course', 'University'];
     
     const csvContent = [
       headers.join(','),
       ...filteredParticipants.map(participant => [
         participant.name,
         participant.email,
-        participant.phone,
-        participant.organization,
-        participant.designation,
-        participant.location,
-        participant.registrationDate,
-        participant.status,
-        participant.ticketType,
-        participant.paymentStatus,
-        participant.dietaryRestrictions,
-        participant.tshirtSize,
-        participant.experience,
-        participant.interests.join('; ')
+        participant.course,
+        participant.university
       ].map(field => `"${field}"`).join(','))
     ].join('\n');
     
@@ -175,31 +96,72 @@ const ParticipantListPage = () => {
   };
 
   const exportToPDF = () => {
-    // Create a comprehensive PDF report
     const reportContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Participant Report - ${event?.title}</title>
+        <title>Participant List - ${event?.title}</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0ea5e9; padding-bottom: 20px; }
-          .event-info { background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-          .stats { display: flex; justify-content: space-around; margin-bottom: 30px; }
-          .stat-card { text-align: center; padding: 15px; background: #e0f2fe; border-radius: 8px; }
-          .participant { border: 1px solid #e2e8f0; margin-bottom: 15px; padding: 15px; border-radius: 8px; }
-          .participant-header { font-weight: bold; color: #0369a1; margin-bottom: 10px; }
-          .participant-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-          .detail-item { margin-bottom: 5px; }
-          .label { font-weight: bold; color: #475569; }
-          .status-confirmed { color: #059669; font-weight: bold; }
-          .status-pending { color: #d97706; font-weight: bold; }
-          .footer { margin-top: 40px; text-align: center; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            line-height: 1.6;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #0ea5e9; 
+            padding-bottom: 20px; 
+          }
+          .event-info { 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 30px; 
+          }
+          .stats { 
+            display: flex; 
+            justify-content: space-around; 
+            margin-bottom: 30px; 
+          }
+          .stat-card { 
+            text-align: center; 
+            padding: 15px; 
+            background: #e0f2fe; 
+            border-radius: 8px; 
+            min-width: 120px;
+          }
+          .participant-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          .participant-table th,
+          .participant-table td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+          }
+          .participant-table th {
+            background: #f1f5f9;
+            font-weight: bold;
+            color: #0369a1;
+          }
+          .participant-table tr:nth-child(even) {
+            background: #f8fafc;
+          }
+          .footer { 
+            margin-top: 40px; 
+            text-align: center; 
+            color: #64748b; 
+            border-top: 1px solid #e2e8f0; 
+            padding-top: 20px; 
+          }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>Participant Report</h1>
+          <h1>Participant List</h1>
           <h2>${event?.title || 'Event'}</h2>
           <p>Generated on ${new Date().toLocaleDateString()}</p>
         </div>
@@ -207,9 +169,9 @@ const ParticipantListPage = () => {
         <div class="event-info">
           <h3>Event Information</h3>
           <p><strong>Event:</strong> ${event?.title}</p>
-          <p><strong>Date:</strong> ${event ? new Date(event.date).toLocaleDateString() : 'N/A'}</p>
-          <p><strong>Location:</strong> ${event?.location}</p>
-          <p><strong>Total Capacity:</strong> ${event?.maxParticipants}</p>
+          <p><strong>Date:</strong> ${event?.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'N/A'}</p>
+          <p><strong>Location:</strong> ${event?.location || 'N/A'}</p>
+          <p><strong>Total Participants:</strong> ${filteredParticipants.length}</p>
         </div>
         
         <div class="stats">
@@ -218,40 +180,40 @@ const ParticipantListPage = () => {
             <p>Total Participants</p>
           </div>
           <div class="stat-card">
-            <h3>${filteredParticipants.filter(p => p.status === 'confirmed').length}</h3>
-            <p>Confirmed</p>
+            <h3>${filteredParticipants.filter(p => p.currentlyStudyingOrNot).length}</h3>
+            <p>Currently Studying</p>
           </div>
           <div class="stat-card">
-            <h3>${filteredParticipants.filter(p => p.status === 'pending').length}</h3>
-            <p>Pending</p>
+            <h3>${[...new Set(filteredParticipants.map(p => p.university))].length}</h3>
+            <p>Universities</p>
           </div>
           <div class="stat-card">
-            <h3>${filteredParticipants.filter(p => p.paymentStatus === 'paid').length}</h3>
-            <p>Paid</p>
+            <h3>${[...new Set(filteredParticipants.map(p => p.course))].length}</h3>
+            <p>Courses</p>
           </div>
         </div>
         
         <h3>Participant Details</h3>
-        ${filteredParticipants.map(participant => `
-          <div class="participant">
-            <div class="participant-header">${participant.name}</div>
-            <div class="participant-details">
-              <div class="detail-item"><span class="label">Email:</span> ${participant.email}</div>
-              <div class="detail-item"><span class="label">Phone:</span> ${participant.phone}</div>
-              <div class="detail-item"><span class="label">Organization:</span> ${participant.organization}</div>
-              <div class="detail-item"><span class="label">Designation:</span> ${participant.designation}</div>
-              <div class="detail-item"><span class="label">Location:</span> ${participant.location}</div>
-              <div class="detail-item"><span class="label">Registration Date:</span> ${participant.registrationDate}</div>
-              <div class="detail-item"><span class="label">Status:</span> <span class="status-${participant.status}">${participant.status.toUpperCase()}</span></div>
-              <div class="detail-item"><span class="label">Ticket Type:</span> ${participant.ticketType}</div>
-              <div class="detail-item"><span class="label">Payment:</span> ${participant.paymentStatus}</div>
-              <div class="detail-item"><span class="label">T-shirt Size:</span> ${participant.tshirtSize}</div>
-              <div class="detail-item"><span class="label">Experience:</span> ${participant.experience}</div>
-              <div class="detail-item"><span class="label">Dietary Restrictions:</span> ${participant.dietaryRestrictions}</div>
-            </div>
-            <div style="margin-top: 10px;"><span class="label">Interests:</span> ${participant.interests.join(', ')}</div>
-          </div>
-        `).join('')}
+        <table class="participant-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Course</th>
+              <th>University</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredParticipants.map(participant => `
+              <tr>
+                <td>${participant.name}</td>
+                <td>${participant.email}</td>
+                <td>${participant.course}</td>
+                <td>${participant.university}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
         
         <div class="footer">
           <p>This report was generated by TechEvents platform</p>
@@ -271,6 +233,38 @@ const ParticipantListPage = () => {
     }, 250);
   };
 
+  if (loading) {
+    return (
+      <div className="pt-20 pb-16 min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 md:px-6 py-16">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="pt-20 pb-16 min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 md:px-6 py-16 text-center">
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
+            Error Loading Participants
+          </h1>
+          <p className="text-lg text-gray-600 mb-8">{error}</p>
+          <button 
+            onClick={onBack}
+            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors inline-flex items-center"
+          >
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!event) {
     return (
       <div className="pt-20 pb-16 min-h-screen bg-gray-50">
@@ -281,13 +275,13 @@ const ParticipantListPage = () => {
           <p className="text-lg text-gray-600 mb-8">
             We couldn't find the event you're looking for.
           </p>
-          <Link 
-            to="/dashboard/organization" 
+          <button 
+            onClick={onBack}
             className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors inline-flex items-center"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
             Back to Dashboard
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -299,13 +293,13 @@ const ParticipantListPage = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center mb-4">
-            <Link 
-              to="/dashboard/organization"
+            <button 
+              onClick={onBack}
               className="flex items-center text-gray-600 hover:text-primary-500 transition-colors mr-4"
             >
               <ArrowLeft className="h-5 w-5 mr-1" />
               Back to Dashboard
-            </Link>
+            </button>
           </div>
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -317,7 +311,7 @@ const ParticipantListPage = () => {
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-1" />
-                    {new Date(event.date).toLocaleDateString()}
+                    {new Date(event.eventDate).toLocaleDateString()}
                   </div>
                   <div className="flex items-center">
                     <MapPin className="h-4 w-4 mr-1" />
@@ -366,27 +360,13 @@ const ParticipantListPage = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4">
-                <Users className="h-6 w-6" />
+                <GraduationCap className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {participants.filter(p => p.status === 'confirmed').length}
+                  {participants.filter(p => p.currentlyStudyingOrNot).length}
                 </h3>
-                <p className="text-gray-600">Confirmed</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="bg-orange-100 text-orange-600 p-3 rounded-full mr-4">
-                <Users className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {participants.filter(p => p.status === 'pending').length}
-                </h3>
-                <p className="text-gray-600">Pending</p>
+                <p className="text-gray-600">Currently Studying</p>
               </div>
             </div>
           </div>
@@ -394,45 +374,45 @@ const ParticipantListPage = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4">
-                <Users className="h-6 w-6" />
+                <MapPin className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {participants.filter(p => p.paymentStatus === 'paid').length}
+                  {[...new Set(participants.map(p => p.university))].length}
                 </h3>
-                <p className="text-gray-600">Paid</p>
+                <p className="text-gray-600">Universities</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-orange-100 text-orange-600 p-3 rounded-full mr-4">
+                <GraduationCap className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {[...new Set(participants.map(p => p.course))].length}
+                </h3>
+                <p className="text-gray-600">Different Courses</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-grow relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search participants by name, email, organization..."
-                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
-              />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
-            
-            <div className="flex gap-4">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors bg-white"
-              >
-                <option value="all">All Status</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search participants by name, email, course, or university..."
+              className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
+            />
           </div>
         </div>
 
@@ -446,106 +426,54 @@ const ParticipantListPage = () => {
             <div className="divide-y divide-gray-200">
               {filteredParticipants.map((participant) => (
                 <div key={participant.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex-grow">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h4 className="text-lg font-bold text-gray-900">{participant.name}</h4>
-                          <p className="text-primary-600">{participant.designation}</p>
-                          <p className="text-gray-600">{participant.organization}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            participant.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-orange-100 text-orange-800'
-                          }`}>
-                            {participant.status.toUpperCase()}
-                          </span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            participant.paymentStatus === 'paid' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {participant.paymentStatus.toUpperCase()}
-                          </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
+                          {participant.profileImageUrl ? (
+                            <img 
+                              src={participant.profileImageUrl} 
+                              alt={participant.name}
+                              className="h-12 w-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-primary-600 font-medium text-lg">
+                              {participant.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-center text-gray-600">
-                          <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                          <a href={`mailto:${participant.email}`} className="hover:text-primary-600 transition-colors">
-                            {participant.email}
-                          </a>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                          <a href={`tel:${participant.phone}`} className="hover:text-primary-600 transition-colors">
-                            {participant.phone}
-                          </a>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                          {participant.location}
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                          Registered: {participant.registrationDate}
-                        </div>
-                        <div className="text-gray-600">
-                          <span className="font-medium">Ticket:</span> {participant.ticketType}
-                        </div>
-                        <div className="text-gray-600">
-                          <span className="font-medium">T-shirt:</span> {participant.tshirtSize}
-                        </div>
-                        <div className="text-gray-600">
-                          <span className="font-medium">Experience:</span> {participant.experience}
-                        </div>
-                        <div className="text-gray-600">
-                          <span className="font-medium">Diet:</span> {participant.dietaryRestrictions}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4">
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">Interests:</span>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {participant.interests.map((interest, index) => (
-                              <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-                                {interest}
-                              </span>
-                            ))}
+                      <div className="flex-grow">
+                        <h4 className="text-lg font-semibold text-gray-900">{participant.name}</h4>
+                        <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
+                          <div className="flex items-center">
+                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                            <a href={`mailto:${participant.email}`} className="hover:text-primary-600 transition-colors">
+                              {participant.email}
+                            </a>
+                          </div>
+                          <div className="flex items-center">
+                            <GraduationCap className="h-4 w-4 mr-2 text-gray-400" />
+                            {participant.course}
+                          </div>
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                            {participant.university}
                           </div>
                         </div>
                       </div>
-                      
-                      {(participant.linkedinProfile || participant.githubProfile) && (
-                        <div className="mt-4 flex gap-4">
-                          {participant.linkedinProfile && (
-                            <a 
-                              href={participant.linkedinProfile} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              LinkedIn
-                            </a>
-                          )}
-                          {participant.githubProfile && (
-                            <a 
-                              href={participant.githubProfile} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-gray-700 hover:text-gray-900 text-sm flex items-center"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              GitHub
-                            </a>
-                          )}
-                        </div>
-                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        participant.currentlyStudyingOrNot 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {participant.currentlyStudyingOrNot ? 'Currently Studying' : 'Not Studying'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {participant.totaleventsRegisterd || 0} events attended
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -556,8 +484,8 @@ const ParticipantListPage = () => {
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No participants found</h3>
               <p className="text-gray-600">
-                {searchTerm || filterStatus !== 'all' 
-                  ? 'Try adjusting your search or filter criteria.' 
+                {searchTerm 
+                  ? 'Try adjusting your search criteria.' 
                   : 'No participants have registered for this event yet.'
                 }
               </p>
@@ -569,4 +497,4 @@ const ParticipantListPage = () => {
   );
 };
 
-export default ParticipantListPage;
+export default ParticipantListComponent;
