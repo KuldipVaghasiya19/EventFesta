@@ -13,5 +13,5 @@ public interface EventRepository extends MongoRepository<Event, String> {
     List<Event> findByEventDateAfter(Date date);
     List<Event> findByEventDateBefore(Date date);
     Event findByTitle(String title);
-    //List<Event> findByEventbyParticipant(Participant participant);
+    List<Event> findByEventDateBetween(Date start, Date end);
 }

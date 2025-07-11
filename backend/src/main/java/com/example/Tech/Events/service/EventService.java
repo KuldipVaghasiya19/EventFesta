@@ -7,7 +7,6 @@ import com.example.Tech.Events.repository.ParticipantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +27,7 @@ public class EventService {
         this.cloudinaryService = cloudinaryService;
     }
 
-    public Event createEvent(Event event) {
+    public Event createEvent(Event event) throws Exception {
         Event savedEvent = eventRepository.save(event);
 
         System.out.println("Saved Event Tags: " + savedEvent.getTags());
@@ -40,7 +39,7 @@ public class EventService {
         List<Participant> allParticipants = participantRepository.findAll();
 
         for (Participant participant : allParticipants) {
-            List<String> participantTags = participant.getTags();
+            List<String> participantTags = participant.getInterest();
             if (participantTags == null || participantTags.isEmpty()) continue;
 
             Set<String> participantTagSet = new HashSet<>(participantTags);

@@ -1,10 +1,21 @@
 package com.example.Tech.Events.repository;
 
+import com.example.Tech.Events.entity.Event;
 import com.example.Tech.Events.entity.EventRegistration;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
 public interface EventRegistrationRepository extends MongoRepository<EventRegistration, String> {
-    // You can add custom query methods here if needed
+
+
+    Optional<EventRegistration> findByAttendanceCode(String attendanceCode);
+    List<EventRegistration> findByEventId(String eventId);
+    List<EventRegistration> findByEvent_EventDateBetween(Date start, Date end);
+
+
+
 }

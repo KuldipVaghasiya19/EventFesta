@@ -15,6 +15,7 @@ import java.util.List;
 
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"})
 @RequestMapping("/api/events")
 public class EventController {
 
@@ -32,7 +33,7 @@ public class EventController {
 
 
     @PostMapping
-    public Event createEvent(@RequestBody Event event) {
+    public Event createEvent(@RequestBody Event event) throws Exception {
         return eventService.createEvent(event);
     }
 

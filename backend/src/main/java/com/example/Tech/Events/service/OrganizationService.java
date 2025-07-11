@@ -20,7 +20,7 @@ public class OrganizationService {
     @Autowired
     private EmailService emailService;
 
-    public Organization createOrganization(Organization organization) {
+    public Organization createOrganization(Organization organization) throws Exception {
         organization.setPassword(passwordEncoder.encode(organization.getPassword()));
 
         Organization savedOrganization = organizationRepository.save(organization);

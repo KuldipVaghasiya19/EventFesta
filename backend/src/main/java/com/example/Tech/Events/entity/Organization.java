@@ -1,6 +1,7 @@
 package com.example.Tech.Events.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -52,7 +53,7 @@ public class Organization {
 
     private int totalOrganizedEvents;
 
-    @JsonIgnore
+
     @DBRef
     private List<Event> organizedEvents;
 

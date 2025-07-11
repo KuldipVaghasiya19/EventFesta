@@ -2,8 +2,11 @@ package com.example.Tech.Events.controller;
 
 import com.cloudinary.Cloudinary;
 import com.example.Tech.Events.entity.Event;
+import com.example.Tech.Events.entity.EventRegistration;
 import com.example.Tech.Events.entity.Organization;
 import com.example.Tech.Events.entity.Participant;
+import com.example.Tech.Events.repository.EventRegistrationRepository;
+import com.example.Tech.Events.repository.EventRepository;
 import com.example.Tech.Events.repository.OrganizationRepository;
 import com.example.Tech.Events.service.EventService;
 import com.example.Tech.Events.service.ImageUploadService;
@@ -20,7 +23,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"})
 @RestController
 @RequestMapping("/api/organizations")
 public class OrganizationController {
@@ -42,6 +45,12 @@ public class OrganizationController {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
+
     @PostMapping(value = "/{id}/create-event", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createEvent(
             @PathVariable String id,
@@ -51,8 +60,9 @@ public class OrganizationController {
         try {
             // Convert event JSON string to Event object
 //            ObjectMapper objectMapper = new ObjectMapper();
+            System.out.println(eventJson);
             Event event = objectMapper.readValue(eventJson, Event.class);
-
+            System.out.println(event.getRemainingSeats());
             // Find organization
             Optional<Organization> optionalOrg = organizationRepository.findById(id);
             if (optionalOrg.isEmpty()) {
@@ -143,10 +153,10 @@ public class OrganizationController {
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/event/participants")
-    public ResponseEntity<?> getParticipantsByEventTitle(@RequestParam String title) {
+    @GetMapping("/events/{eventId}/participants")
+    public ResponseEntity<?> getParticipantsByEventId(@PathVariable String eventId) {
         try {
-            Event event = eventService.findByTitle(title);
+            Event event = eventService.getEventById(eventId);  // Make sure this method exists in your service
             List<Participant> participants = event.getRegisterdParticipants();
 
             List<Map<String, Object>> result = participants.stream().map(p -> {
@@ -158,13 +168,14 @@ public class OrganizationController {
 
             return ResponseEntity.ok(result);
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Event not found with ID: " + eventId);
         }
     }
 
 
+
     @PostMapping
-    public Organization createOrganization(@RequestBody Organization organization) {
+    public Organization createOrganization(@RequestBody Organization organization) throws Exception {
         return organizationService.createOrganization(organization);
     }
 
@@ -201,5 +212,77 @@ public class OrganizationController {
     public ResponseEntity<?> deleteOrganization(@PathVariable String id) {
         organizationService.deleteOrganization(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/attendance/verify")
+    public ResponseEntity<?> verifyAttendanceCode(@RequestBody Map<String, String> request) {
+        String code = request.get("attendanceCode");
+        Optional<EventRegistration> optionalReg = eventRegistrationRepository.findByAttendanceCode(code);
+
+        if (optionalReg.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid attendance code");
+        }
+
+        EventRegistration registration = optionalReg.get();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("participantName", registration.getParticipantName());
+        response.put("registeredEmail", registration.getRegisteredEmail());
+        response.put("isPresent", registration.isPresent());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/attendance/mark")
+    public ResponseEntity<?> markAttendance(@RequestBody Map<String, Object> request) {
+        String code = (String) request.get("attendanceCode");
+        boolean isPresent = (boolean) request.get("isPresent");
+
+        Optional<EventRegistration> optionalReg = eventRegistrationRepository.findByAttendanceCode(code);
+        if (optionalReg.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid attendance code");
+        }
+
+        EventRegistration registration = optionalReg.get();
+        registration.setPresent(isPresent);
+        eventRegistrationRepository.save(registration);
+
+        return ResponseEntity.ok("Attendance status updated");
+    }
+
+    @GetMapping("/api/events/{eventId}/attendance-summary")
+    public ResponseEntity<?> getEventAttendanceSummary(@PathVariable String eventId) {
+        Optional<Event> eventOpt = eventRepository.findById(eventId);
+        if (eventOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Event not found");
+        }
+
+        List<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventId);
+
+        Map<String, Object> summary = new HashMap<>();
+        List<Map<String, Object>> presentList = new ArrayList<>();
+        List<Map<String, Object>> absentList = new ArrayList<>();
+
+        for (EventRegistration reg : registrations) {
+            Map<String, Object> participantData = new HashMap<>();
+            participantData.put("participantName", reg.getParticipantName());
+            participantData.put("registeredEmail", reg.getRegisteredEmail());
+            participantData.put("phoneNumber", reg.getPhoneNumber());
+            participantData.put("yearOrDesignation", reg.getYearOrDesignation());
+
+            if (reg.isPresent()) {
+                presentList.add(participantData);
+            } else {
+                absentList.add(participantData);
+            }
+        }
+
+        summary.put("totalRegistrations", registrations.size());
+        summary.put("presentCount", presentList.size());
+        summary.put("absentCount", absentList.size());
+        summary.put("presentParticipants", presentList);
+        summary.put("absentParticipants", absentList);
+
+        return ResponseEntity.ok(summary);
     }
 }

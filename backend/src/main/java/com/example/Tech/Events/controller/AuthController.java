@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"})
 @RequestMapping("/api/auth")
 public class AuthController {
 
@@ -69,12 +70,13 @@ public class AuthController {
             }
 
             Organization savedOrg = organizationService.createOrganization(organization);
-            savedOrg.setPassword(null);
 
             return ResponseEntity.ok(savedOrg);
 
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process request: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -92,7 +94,6 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
 
-        org.setPassword(null);
         return ResponseEntity.ok(org);
     }
 
@@ -126,12 +127,13 @@ public class AuthController {
             }
 
             Participant savedParticipant = participantService.createParticipant(participant);
-            savedParticipant.setPassword(null); // Hide password in response
 
             return ResponseEntity.ok(savedParticipant);
 
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process request: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -148,7 +150,6 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
 
-        participant.setPassword(null);
         return ResponseEntity.ok(participant);
     }
 }
