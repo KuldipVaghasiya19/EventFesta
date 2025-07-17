@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Tag, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 
-const InterestsSection = ({ participantId = "test-participant-123" }) => {
-  const [interests, setInterests] = useState([]);
+const InterestsSection = ({ 
+  interests: initialInterests = [], 
+  setInterests: setParentInterests,
+  participantId,
+  onInterestsUpdate
+}) => {
+  const [interests, setInterests] = useState(initialInterests);
   const [newInterest, setNewInterest] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Base API URL - adjust this to match your backend
   const API_BASE_URL = 'http://localhost:8080';
 
-  // Load initial interests when component mounts
+  // Update local interests when parent interests change
   useEffect(() => {
-    loadInterests();
-  }, [participantId]);
+    setInterests(initialInterests);
+  }, [initialInterests]);
 
   // Load interests from backend
   const loadInterests = async () => {
@@ -35,7 +40,14 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
       if (response.ok) {
         const data = await response.json();
         console.log('Loaded interests:', data);
-        setInterests(Array.isArray(data) ? data : []);
+        const interestsArray = Array.isArray(data) ? data : [];
+        setInterests(interestsArray);
+        if (setParentInterests) {
+          setParentInterests(interestsArray);
+        }
+        if (onInterestsUpdate) {
+          onInterestsUpdate();
+        }
       } else {
         const errorData = await response.json().catch(() => ({ 
           error: 'Failed to load interests',
@@ -53,7 +65,7 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
     } catch (error) {
       console.error('Network error loading interests:', error);
       setError('Network error. Please check your connection and ensure the backend is running.');
-      setInterests([]); // Set empty array on error
+      setInterests([]);
     } finally {
       setIsLoading(false);
     }
@@ -95,11 +107,21 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
         // Update with backend response
         if (data.tags && Array.isArray(data.tags)) {
           setInterests(data.tags);
+          if (setParentInterests) {
+            setParentInterests(data.tags);
+          }
         } else {
           // Fallback: add locally if backend doesn't return tags
-          setInterests(prev => [...prev, trimmedInterest]);
+          const updatedInterests = [...interests, trimmedInterest];
+          setInterests(updatedInterests);
+          if (setParentInterests) {
+            setParentInterests(updatedInterests);
+          }
         }
         setNewInterest('');
+        if (onInterestsUpdate) {
+          onInterestsUpdate();
+        }
       } else {
         const errorData = await response.json().catch(() => ({ 
           error: 'Failed to add interest',
@@ -141,9 +163,19 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
         // Update with backend response
         if (data.tags && Array.isArray(data.tags)) {
           setInterests(data.tags);
+          if (setParentInterests) {
+            setParentInterests(data.tags);
+          }
         } else {
           // Fallback: remove locally if backend doesn't return tags
-          setInterests(prev => prev.filter(interest => interest !== interestToRemove));
+          const updatedInterests = interests.filter(interest => interest !== interestToRemove);
+          setInterests(updatedInterests);
+          if (setParentInterests) {
+            setParentInterests(updatedInterests);
+          }
+        }
+        if (onInterestsUpdate) {
+          onInterestsUpdate();
         }
       } else {
         const errorData = await response.json().catch(() => ({ 
@@ -188,9 +220,19 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
         // Update with backend response
         if (data.tags && Array.isArray(data.tags)) {
           setInterests(data.tags);
+          if (setParentInterests) {
+            setParentInterests(data.tags);
+          }
         } else {
           // Fallback: add locally if backend doesn't return tags
-          setInterests(prev => [...prev, suggestion]);
+          const updatedInterests = [...interests, suggestion];
+          setInterests(updatedInterests);
+          if (setParentInterests) {
+            setParentInterests(updatedInterests);
+          }
+        }
+        if (onInterestsUpdate) {
+          onInterestsUpdate();
         }
       } else {
         const errorData = await response.json().catch(() => ({ 
@@ -231,9 +273,18 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
         
         if (data.tags && Array.isArray(data.tags)) {
           setInterests(data.tags);
+          if (setParentInterests) {
+            setParentInterests(data.tags);
+          }
         } else {
           // Fallback: update locally if backend doesn't return tags
           setInterests(newInterests);
+          if (setParentInterests) {
+            setParentInterests(newInterests);
+          }
+        }
+        if (onInterestsUpdate) {
+          onInterestsUpdate();
         }
       } else {
         const errorData = await response.json().catch(() => ({ 
@@ -465,16 +516,6 @@ const InterestsSection = ({ participantId = "test-participant-123" }) => {
             </div>
           </div>
         )}
-
-        {/* Debug Info (Remove in production) */}
-        <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h3 className="font-semibold text-yellow-800 mb-2">Debug Information:</h3>
-          <p className="text-sm text-yellow-700">Participant ID: {participantId}</p>
-          <p className="text-sm text-yellow-700">API Base URL: {API_BASE_URL}</p>
-          <p className="text-sm text-yellow-700">Current interests: {JSON.stringify(interests)}</p>
-          <p className="text-sm text-yellow-700">Is updating: {isUpdating.toString()}</p>
-          <p className="text-sm text-yellow-700">Error: {error || 'None'}</p>
-        </div>
       </div>
     </div>
   );

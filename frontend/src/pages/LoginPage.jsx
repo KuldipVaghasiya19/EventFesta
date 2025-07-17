@@ -130,7 +130,9 @@ const LoginPage = () => {
         } else {
           // Store in sessionStorage for session-only persistence
           sessionStorage.setItem('techevents_user', JSON.stringify(userData));
-          sessionStorage.setItem('techevents_token', userData.token); // if your backend returns a token
+          sessionStorage.setItem('techevents_token', userData.token);
+           localStorage.setItem('techevents_user', JSON.stringify(userData));
+          localStorage.setItem('techevents_token', userData.token);  // if your backend returns a token
         }
 
         // Fixed navigation logic

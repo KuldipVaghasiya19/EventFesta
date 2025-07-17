@@ -82,8 +82,9 @@ const ParticipantSignup = ({ onSubmit, isSubmitting, submitError }) => {
   const [interestInput, setInterestInput] = useState('');
 
   const commonInterests = [
-    'Technology', 'Sports', 'Music', 'Art', 'Science', 'Literature', 
-    'Business', 'Gaming', 'Photography', 'Travel', 'Cooking', 'Fashion'
+    'JavaScript', 'Python', 'React', 'Node.js', 'Machine Learning', 
+              'DevOps', 'Cloud Computing', 'Cybersecurity', 'Data Science', 
+              'Mobile Development', 'Blockchain', 'AI/ML', 'UI/UX Design',
   ];
 
   const validateForm = () => {

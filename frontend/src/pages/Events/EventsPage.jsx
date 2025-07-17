@@ -1,56 +1,46 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, EffectFade } from 'swiper/modules';
 import { Calendar, MapPin, Users, Search, Filter, ArrowRight, X, Building, Tag } from 'lucide-react';
-import 'swiper/css';
-import 'swiper/css/effect-fade';
+import './animations.css'; // Import the CSS file
 
 const HeroSection = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Images for the hero slider
-  const heroImages = [
-    'https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    'https://images.pexels.com/photos/7648047/pexels-photo-7648047.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    'https://images.pexels.com/photos/2182973/pexels-photo-2182973.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
-  ];
-
   return (
     <section className="relative h-96 flex items-center overflow-hidden">
-      {/* Background Overlay */}
-      <div className="absolute inset-0 bg-black bg-opacity-60 z-10"></div>
-      
-      {/* Background Slider */}
-      <Swiper
-        className="absolute inset-0 w-full h-full"
-        modules={[Autoplay, EffectFade]}
-        effect="fade"
-        autoplay={{ delay: 5000, disableOnInteraction: false }}
-        loop={true}
-        onSlideChange={(swiper) => setCurrentSlide(swiper.realIndex)}
-      >
-        {heroImages.map((image, index) => (
-          <SwiperSlide key={index}>
-            <div 
-              className="w-full h-full bg-cover bg-center transition-transform duration-10000 transform scale-105"
-              style={{ 
-                backgroundImage: `url(${image})`,
-                animation: currentSlide === index ? 'zoom-in 6s ease-in-out' : 'none'
-              }}
-            ></div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-navy-900 dark:via-slate-800 dark:to-navy-900">
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-primary-400/30 to-primary-500/20 animate-shimmer"></div>
+        
+        {/* Additional flowing animation */}
+        <div className="absolute inset-0 bg-gradient-to-l from-primary-600/10 via-transparent to-primary-400/10 animate-flow"></div>
+        
+        {/* Pulse overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-primary-600/5 animate-pulse-slow"></div>
+        
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.3)_1px,transparent_0)] bg-[length:20px_20px]"></div>
+        </div>
+        
+        {/* Floating elements with improved animations */}
+        <div className="absolute top-10 left-10 w-20 h-20 bg-primary-500/20 rounded-full blur-xl animate-float-bounce"></div>
+        <div className="absolute top-20 right-20 w-16 h-16 bg-primary-400/20 rounded-full blur-xl animate-float-delayed-bounce"></div>
+        <div className="absolute bottom-16 left-1/4 w-12 h-12 bg-primary-600/20 rounded-full blur-xl animate-float-slow-bounce"></div>
+        <div className="absolute bottom-20 right-1/3 w-24 h-24 bg-primary-300/20 rounded-full blur-xl animate-float-delayed-bounce"></div>
+        
+        {/* Additional floating particles */}
+        <div className="absolute top-1/2 left-1/4 w-8 h-8 bg-primary-400/15 rounded-full blur-lg animate-drift"></div>
+        <div className="absolute top-1/3 right-1/4 w-6 h-6 bg-primary-500/15 rounded-full blur-lg animate-drift-delayed"></div>
+        <div className="absolute bottom-1/3 left-1/2 w-10 h-10 bg-primary-600/15 rounded-full blur-lg animate-drift-slow"></div>
+      </div>
       
       {/* Hero Content */}
       <div className="container mx-auto px-4 md:px-6 z-20 relative">
-        <div className="text-center text-white animate-slide-up">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-4 leading-tight">
-            Discover Amazing <span className="text-primary-400">Tech Events</span>
+        <div className="text-center text-white animate-slide-up-enhanced">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-4 leading-tight animate-text-glow">
+            Discover Amazing <span className="text-primary-400 drop-shadow-lg animate-text-pulse">Tech Events</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-gray-200 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto drop-shadow-sm animate-fade-in-up">
             Find and join the most innovative tech events, from conferences and workshops to hackathons and meetups.
           </p>
         </div>
@@ -97,6 +87,35 @@ const EventsPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Color mapping for event types
+  const getEventTypeColor = (type) => {
+    const colors = {
+      'workshop': 'bg-blue-500',
+      'seminar': 'bg-green-500',
+      'conference': 'bg-purple-500',
+      'hackathon': 'bg-red-500',
+      'meetup': 'bg-orange-500',
+      'webinar': 'bg-indigo-500',
+      'bootcamp': 'bg-pink-500',
+      'networking': 'bg-teal-500',
+      'training': 'bg-yellow-500',
+      'symposium': 'bg-cyan-500',
+      'summit': 'bg-violet-500',
+      'expo': 'bg-emerald-500',
+      'forum': 'bg-rose-500',
+      'roundtable': 'bg-amber-500',
+      'panel': 'bg-lime-500',
+      'masterclass': 'bg-slate-500',
+      'competition': 'bg-fuchsia-500',
+      'startup': 'bg-sky-500',
+      'demo': 'bg-stone-500',
+      'pitch': 'bg-zinc-500'
+    };
+    
+    const normalizedType = type.toLowerCase();
+    return colors[normalizedType] || 'bg-primary-500'; // Default to primary color
   };
 
   const types = [...new Set(events.map(event => event.type))];
@@ -280,7 +299,7 @@ const EventsPage = () => {
                     alt={event.title} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute top-4 right-4 bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  <div className={`absolute top-4 right-4 ${getEventTypeColor(event.type)} text-white text-xs font-bold px-3 py-1 rounded-full`}>
                     {event.type}
                   </div>
                 </div>
