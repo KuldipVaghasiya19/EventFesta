@@ -2,6 +2,7 @@ package com.example.Tech.Events.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -41,9 +42,6 @@ public class Event {
 
     @NonNull
     private Date lastRegistertDate;
-
-//    @NonNull
-//    private LocalTime time;
 
     @NonNull
     private String location;

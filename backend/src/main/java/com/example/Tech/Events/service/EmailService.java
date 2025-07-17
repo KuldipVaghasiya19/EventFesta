@@ -15,12 +15,14 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Set;
 
 @Service
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
     private static final String FROM_EMAIL = "eventfesta11@gmail.com";
+    private static final String ADMIN_EMAIL = "admin@eventfesta.com"; // Admin email for BCC
 
     @Autowired
     private JavaMailSender mailSender;
@@ -37,6 +39,7 @@ public class EmailService {
 
             helper.setTo(to);
             helper.setFrom(FROM_EMAIL);
+            helper.setBcc(ADMIN_EMAIL); // Add BCC for admin monitoring
             helper.setSubject("🎉 Welcome to EventFesta - Registration Successful!");
 
             String htmlContent = buildRegistrationEmailContent(name);
@@ -52,20 +55,21 @@ public class EmailService {
     }
 
     /**
-     * Sends a beautiful event match notification email
+     * Sends a beautiful event match notification email with matched tags
      */
-    public void sendTagMatchEmail(String toEmail, String participantName, Event event) throws Exception {
+    public void sendTagMatchEmail(String toEmail, String participantName, Event event, Set<String> matchedTags) throws Exception {
         try {
-            logger.info("Sending tag match email to: {}", toEmail);
+            logger.info("Sending tag match email to: {} with matched tags: {}", toEmail, matchedTags);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
             helper.setFrom(FROM_EMAIL);
+            helper.setBcc(ADMIN_EMAIL); // Add BCC for admin monitoring
             helper.setSubject("🎯 Perfect Match Found: " + event.getTitle() + " - Just for You!");
 
-            String htmlContent = buildTagMatchEmailContent(participantName, event);
+            String htmlContent = buildTagMatchEmailContent(participantName, event, matchedTags);
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
@@ -75,6 +79,13 @@ public class EmailService {
             logger.error("Failed to send tag match email: {}", e.getMessage(), e);
             throw new Exception("Failed to send tag match email: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Overloaded method for backward compatibility
+     */
+    public void sendTagMatchEmail(String toEmail, String participantName, Event event) throws Exception {
+        sendTagMatchEmail(toEmail, participantName, event, null);
     }
 
     /**
@@ -111,6 +122,7 @@ public class EmailService {
 
             helper.setTo(toEmail);
             helper.setFrom(FROM_EMAIL);
+            helper.setBcc(ADMIN_EMAIL); // Add BCC for admin monitoring
             helper.setSubject("🎫 Your Event Ticket & QR Code - " + event.getTitle());
 
             String htmlContent = buildQREmailContent(participantName, event, base64Image);
@@ -191,9 +203,25 @@ public class EmailService {
     }
 
     /**
-     * Builds HTML content for tag match email
+     * Builds HTML content for tag match email with matched tags
      */
-    private String buildTagMatchEmailContent(String participantName, Event event) {
+    private String buildTagMatchEmailContent(String participantName, Event event, Set<String> matchedTags) {
+        // Build matched tags HTML
+        String matchedTagsHtml = "";
+        if (matchedTags != null && !matchedTags.isEmpty()) {
+            StringBuilder tagsBuilder = new StringBuilder();
+            tagsBuilder.append("<div class='matched-tags'>");
+            tagsBuilder.append("<h4 style='color: #667eea; margin-bottom: 15px;'>🎯 Why This Event Matches You:</h4>");
+            tagsBuilder.append("<div class='tags-container'>");
+            for (String tag : matchedTags) {
+                tagsBuilder.append("<span class='tag-badge'>").append(tag).append("</span>");
+            }
+            tagsBuilder.append("</div>");
+            tagsBuilder.append("<p style='font-size: 0.9rem; color: #666; margin-top: 10px;'>These are the interests that match between you and this event!</p>");
+            tagsBuilder.append("</div>");
+            matchedTagsHtml = tagsBuilder.toString();
+        }
+
         return "<!DOCTYPE html>" +
                 "<html>" +
                 "<head>" +
@@ -208,6 +236,9 @@ public class EmailService {
                 ".detail-icon { width: 30px; font-size: 1.2rem; }" +
                 ".detail-text { flex: 1; }" +
                 ".urgent { background: #ff4757; color: white; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; }" +
+                ".matched-tags { background: #e8f4fd; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #3498db; }" +
+                ".tags-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }" +
+                ".tag-badge { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; display: inline-block; }" +
                 "</style>" +
                 "</head>" +
                 "<body>" +
@@ -220,6 +251,7 @@ public class EmailService {
                 "<div class='match-badge'>✨ PERSONALIZED FOR YOU</div>" +
                 "<h2>Hi " + participantName + "! 👋</h2>" +
                 "<p style='font-size: 1.1rem; line-height: 1.8;'>Great news! We found an event that perfectly matches your interests and skills. This could be exactly what you're looking for!</p>" +
+                matchedTagsHtml +
                 "<div class='event-card'>" +
                 "<div class='event-type'>" + (event.getType() != null ? event.getType().toString().toUpperCase() : "EVENT") + "</div>" +
                 "<h3 style='color: #2c3e50; margin: 0 0 15px 0;'>" + event.getTitle() + "</h3>" +
@@ -227,10 +259,6 @@ public class EmailService {
                 "<div class='detail-row'>" +
                 "<span class='detail-icon'>📅</span>" +
                 "<span class='detail-text'><strong>Date:</strong> " + event.getEventDate() + "</span>" +
-                "</div>" +
-                "<div class='detail-row'>" +
-                "<span class='detail-icon'>🕐</span>" +
-                "<span class='detail-text'><strong>Time:</strong> "  + "</span>" +
                 "</div>" +
                 "<div class='detail-row'>" +
                 "<span class='detail-icon'>📍</span>" +
@@ -377,6 +405,7 @@ public class EmailService {
                 ".header h1 { font-size: 1.8rem; }" +
                 ".content { padding: 20px; }" +
                 ".detail-grid { grid-template-columns: 1fr; }" +
+                ".tags-container { justify-content: center; }" +
                 "}";
     }
 

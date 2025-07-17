@@ -14,7 +14,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(
+        origins = {"http://localhost:5173", "http://localhost:8080"},
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH, RequestMethod.OPTIONS},
+        allowedHeaders = {"Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"},
+        allowCredentials = "true"
+)
 @RestController
 @RequestMapping("/api/participants")
 public class ParticipantController {
@@ -27,17 +32,16 @@ public class ParticipantController {
         this.participantService = participantService;
     }
 
-
-//    // Get participant by ID
-//    @GetMapping("/{id}")
-//    public ResponseEntity<?> getParticipant(@PathVariable String id) {
-//        return participantService.getParticipantById(id)
-//                .map(participant -> {
-//                    participant.setPassword(null);
-//                    return ResponseEntity.ok(participant);
-//                })
-//                .orElse(ResponseEntity.notFound().build());
-//    }
+    // Get participant by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getParticipant(@PathVariable String id) {
+        return participantService.getParticipantById(id)
+                .map(participant -> {
+                    participant.setPassword(null);
+                    return ResponseEntity.ok(participant);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateParticipant(
@@ -62,25 +66,6 @@ public class ParticipantController {
             return ResponseEntity.notFound().build();
         }
     }
-
-//    // Register for event
-//    @PostMapping("/{participantId}/events/{eventId}")
-//    public ResponseEntity<?> registerForEvent(
-//            @PathVariable String participantId,
-//            @PathVariable String eventId) {
-//        try {
-//            // In a real implementation, you would fetch the Event object first
-//            Event event = new Event();
-//            event.setId(eventId);
-//
-//            Participant participant = participantService.registerForEvent(participantId, event);
-//            participant.setPassword(null);
-//            return ResponseEntity.ok(participant);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
-
 
     // Get all registered events
     @GetMapping("/{participantId}/events")

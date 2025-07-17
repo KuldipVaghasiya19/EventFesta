@@ -57,6 +57,7 @@ public class OrganizationController {
             @RequestPart("event") String eventJson,
             @RequestPart("image") MultipartFile imageFile) {
 
+
         try {
             // Convert event JSON string to Event object
 //            ObjectMapper objectMapper = new ObjectMapper();
@@ -155,21 +156,36 @@ public class OrganizationController {
 
     @GetMapping("/events/{eventId}/participants")
     public ResponseEntity<?> getParticipantsByEventId(@PathVariable String eventId) {
-        try {
-            Event event = eventService.getEventById(eventId);  // Make sure this method exists in your service
-            List<Participant> participants = event.getRegisterdParticipants();
-
-            List<Map<String, Object>> result = participants.stream().map(p -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("name", p.getName());
-                map.put("email", p.getEmail());
-                return map;
-            }).collect(Collectors.toList());
-
-            return ResponseEntity.ok(result);
-        } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Event not found with ID: " + eventId);
+        Optional<Event> eventOpt = eventRepository.findById(eventId);
+        if (eventOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Event not found");
         }
+
+        Event event = eventOpt.get();
+        List<Participant> participants = event.getRegisterdParticipants();
+
+        if (participants == null || participants.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        List<Map<String, Object>> participantDetails = participants.stream().map(p -> {
+            Map<String, Object> details = new HashMap<>();
+            details.put("id", p.getId());
+            details.put("name", p.getName());
+            details.put("email", p.getEmail());
+            // Assuming `getPhone()` and `getUniversity()` are available on Participant
+            // and `getProfileImageUrl()`
+            details.put("phone", "123-456-7890"); // Placeholder
+            details.put("location", p.getUniversity());
+            details.put("profileImageUrl", p.getProfileImageUrl());
+            return details;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("event", event);
+        response.put("participants", participantDetails);
+
+        return ResponseEntity.ok(response);
     }
 
 

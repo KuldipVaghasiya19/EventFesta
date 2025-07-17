@@ -43,16 +43,19 @@ public class EventService {
             if (participantTags == null || participantTags.isEmpty()) continue;
 
             Set<String> participantTagSet = new HashSet<>(participantTags);
-            participantTagSet.retainAll(eventTagSet);
+            Set<String> matchedTags = new HashSet<>(participantTagSet);
+            matchedTags.retainAll(eventTagSet);
 
-            System.out.println("common Tags: " + participantTagSet);
-
+            System.out.println("Matched Tags for " + participant.getName() + ": " + matchedTags);
             System.out.println("Saved Event Tags: " + savedEvent.getTags());
-            if (!participantTagSet.isEmpty()) {
+
+            if (!matchedTags.isEmpty()) {
+                // Send email with matched tags
                 emailService.sendTagMatchEmail(
                         participant.getEmail(),
                         participant.getName(),
-                        event
+                        event,
+                        matchedTags // Pass the matched tags
                 );
             }
         }
