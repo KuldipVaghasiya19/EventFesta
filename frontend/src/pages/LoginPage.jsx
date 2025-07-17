@@ -6,7 +6,7 @@ const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const role = searchParams.get('role') || 'participant';
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,12 +15,12 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   useEffect(() => {
     window.scrollTo(0, 0);
     document.title = `Login as ${role.charAt(0).toUpperCase() + role.slice(1)} - TechEvents`;
   }, [role]);
-  
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.email.trim()) {
@@ -29,19 +29,18 @@ const LoginPage = () => {
       newErrors.email = 'Email is invalid';
     }
     if (!formData.password) newErrors.password = 'Password is required';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
-    // Clear error when user types
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -49,11 +48,10 @@ const LoginPage = () => {
 
   const loginUser = async (credentials) => {
     try {
-      // Use specific endpoint based on role
-      const endpoint = role === 'organization' 
-        ? 'http://localhost:8080/api/auth/login/organization' 
+      const endpoint = role === 'organization'
+        ? 'http://localhost:8080/api/auth/login/organization'
         : 'http://localhost:8080/api/auth/login/participant';
-      
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -65,23 +63,19 @@ const LoginPage = () => {
         }),
       });
 
-      // Check if response is JSON
       const contentType = response.headers.get('content-type');
       const isJson = contentType && contentType.includes('application/json');
 
       if (!response.ok) {
         let errorMessage = 'Login failed';
-        
         if (isJson) {
           try {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
           } catch (jsonError) {
-            // If JSON parsing fails, use default message
             console.error('Failed to parse error response as JSON:', jsonError);
           }
         } else {
-          // Handle non-JSON responses
           try {
             const textResponse = await response.text();
             errorMessage = textResponse || errorMessage;
@@ -89,14 +83,11 @@ const LoginPage = () => {
             console.error('Failed to read error response as text:', textError);
           }
         }
-        
         throw new Error(errorMessage);
       }
 
-      // Parse successful response
       if (isJson) {
         const userData = await response.json();
-        console.log('Login successful:', userData.role);
         return userData;
       } else {
         throw new Error('Expected JSON response but received non-JSON content');
@@ -107,14 +98,14 @@ const LoginPage = () => {
     }
   };
 
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       setIsSubmitting(true);
       setErrors({});
-      
+
       try {
         const credentials = {
           email: formData.email,
@@ -122,49 +113,38 @@ const LoginPage = () => {
         };
 
         const userData = await loginUser(credentials);
-        
-        // Store user data in localStorage if "Remember me" is checked
+
+        // ✅ **Corrected "Remember Me" Logic**
+        // This block now correctly handles the storage.
         if (formData.rememberMe) {
+          // If checked, store data in localStorage for persistence across browser sessions.
           localStorage.setItem('techevents_user', JSON.stringify(userData));
-          localStorage.setItem('techevents_token', userData.token); // if your backend returns a token
         } else {
-          // Store in sessionStorage for session-only persistence
+          // If not checked, store in sessionStorage to be cleared when the browser tab is closed.
           sessionStorage.setItem('techevents_user', JSON.stringify(userData));
-          sessionStorage.setItem('techevents_token', userData.token);
-           localStorage.setItem('techevents_user', JSON.stringify(userData));
-          localStorage.setItem('techevents_token', userData.token);  // if your backend returns a token
         }
 
-        // Fixed navigation logic
+        // Navigate to the correct dashboard after successful login
         if (userData.role === 'ORGANIZATION') {
-          navigate('/dashboard/organization', { 
-            state: { userData },
-            replace: true 
-          });
+          navigate('/dashboard/organization', { replace: true });
         } else if (userData.role === 'PARTICIPANT') {
-          navigate('/dashboard/participant', { 
-            state: { userData },
-            replace: true 
-          });
+          navigate('/dashboard/participant', { replace: true });
         } else {
-          // Better fallback
-          navigate('/dashboard/organization', { 
-            state: { userData },
-            replace: true 
-          });
+          // Fallback navigation in case role is not standard
+          navigate('/', { replace: true });
         }
-        
+
       } catch (error) {
         console.error('Login error:', error);
-        setErrors({ 
-          submit: error.message || 'Login failed. Please check your credentials and try again.' 
+        setErrors({
+          submit: error.message || 'Login failed. Please check your credentials and try again.'
         });
       } finally {
         setIsSubmitting(false);
       }
     }
   };
-  
+
   return (
     <div className="pt-20 pb-16 bg-gray-50 min-h-screen flex items-center">
       <div className="container mx-auto px-4 md:px-6">
@@ -189,13 +169,13 @@ const LoginPage = () => {
                   Welcome back! Please enter your details.
                 </p>
               </div>
-              
+
               {errors.submit && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-red-700 text-sm">{errors.submit}</p>
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -217,7 +197,7 @@ const LoginPage = () => {
                     <p className="mt-1 text-sm text-red-500">{errors.email}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                     Password
@@ -252,7 +232,7 @@ const LoginPage = () => {
                     <p className="mt-1 text-sm text-red-500">{errors.password}</p>
                   )}
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <input
@@ -268,14 +248,14 @@ const LoginPage = () => {
                       Remember me
                     </label>
                   </div>
-                  <Link 
+                  <Link
                     to="/forgot-password"
                     className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
                   >
                     Forgot password?
                   </Link>
                 </div>
-                
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -292,7 +272,7 @@ const LoginPage = () => {
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </button>
               </form>
-              
+
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -302,7 +282,7 @@ const LoginPage = () => {
                     <span className="px-2 bg-white text-gray-500">Or continue with</span>
                   </div>
                 </div>
-                
+
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -329,21 +309,21 @@ const LoginPage = () => {
                   </button>
                 </div>
               </div>
-              
+
               <p className="text-center text-sm text-gray-600 mt-6">
                 Don't have an account?{' '}
-                <Link 
+                <Link
                   to={`/signup?role=${role}`}
                   className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   Sign up
                 </Link>
               </p>
-              
+
               {role === 'participant' ? (
                 <p className="text-center text-sm text-gray-600 mt-4">
                   Want to host events?{' '}
-                  <Link 
+                  <Link
                     to="/login?role=organization"
                     className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
                   >
@@ -353,19 +333,19 @@ const LoginPage = () => {
               ) : (
                 <p className="text-center text-sm text-gray-600 mt-4">
                   Want to attend events?{' '}
-                  <Link 
+                  <Link
                     to="/login?role=participant"
                     className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
                   >
                     Login as participant
-                  </Link>
-                </p>
+                  </Link >
+                </p >
               )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </div >
+          </div >
+        </div >
+      </div >
+    </div >
   );
 };
 

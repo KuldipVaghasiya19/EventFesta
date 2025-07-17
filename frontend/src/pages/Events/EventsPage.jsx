@@ -90,33 +90,41 @@ const EventsPage = () => {
   };
 
   // Color mapping for event types
-  const getEventTypeColor = (type) => {
-    const colors = {
-      'workshop': 'bg-blue-500',
-      'seminar': 'bg-green-500',
-      'conference': 'bg-purple-500',
-      'hackathon': 'bg-red-500',
-      'meetup': 'bg-orange-500',
-      'webinar': 'bg-indigo-500',
-      'bootcamp': 'bg-pink-500',
-      'networking': 'bg-teal-500',
-      'training': 'bg-yellow-500',
-      'symposium': 'bg-cyan-500',
-      'summit': 'bg-violet-500',
-      'expo': 'bg-emerald-500',
-      'forum': 'bg-rose-500',
-      'roundtable': 'bg-amber-500',
-      'panel': 'bg-lime-500',
-      'masterclass': 'bg-slate-500',
-      'competition': 'bg-fuchsia-500',
-      'startup': 'bg-sky-500',
-      'demo': 'bg-stone-500',
-      'pitch': 'bg-zinc-500'
-    };
-    
-    const normalizedType = type.toLowerCase();
-    return colors[normalizedType] || 'bg-primary-500'; // Default to primary color
+ const getEventTypeColor = (type) => {
+  // Guard clause for null/undefined types, now returning your preferred default
+  if (!type) {
+    return 'bg-primary-500';
+  }
+
+  // Your exact color mapping
+  const colorMap = {
+    'workshop': 'bg-blue-500',
+    'seminar': 'bg-green-500',
+    'conference': 'bg-purple-500',
+    'hackathon': 'bg-red-500',
+    'meetup': 'bg-orange-500',
+    'webinar': 'bg-indigo-500',
+    'bootcamp': 'bg-pink-500',
+    'networking': 'bg-teal-500',
+    'training': 'bg-yellow-500',
+    'symposium': 'bg-cyan-500',
+    'summit': 'bg-violet-500',
+    'expo': 'bg-emerald-500',
+    'forum': 'bg-rose-500',
+    'roundtable': 'bg-amber-500',
+    'panel': 'bg-lime-500',
+    'masterclass': 'bg-slate-500',
+    'competition': 'bg-fuchsia-500',
+    'startup': 'bg-sky-500',
+    'demo': 'bg-stone-500',
+    'pitch': 'bg-zinc-500'
   };
+
+  const normalizedType = type.toLowerCase();
+
+  // Look up the color or return the primary color as a default
+  return colorMap[normalizedType] || 'bg-primary-500';
+};
 
   const types = [...new Set(events.map(event => event.type))];
 

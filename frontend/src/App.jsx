@@ -13,7 +13,7 @@ import ParticipantDashboard from './pages/Participant/ParticipantDashboard';
 import OrganizationDashboard from './pages/Organization/OrganizationDashboard';
 import CreateEventPage from './pages/Events/CreateEventPage';
 import ProfileUpdatePage from './pages/Organization/ProfileUpdatePage';
-import ParticipantListPage from './pages/Organization/ParticipantListPage';
+import ParticipantListPage from './pages/Organization/ParticipantListPage'; // Make sure this is imported
 
 function App() {
   return (
@@ -33,7 +33,7 @@ function App() {
           <Route path="/dashboard/participant" element={<ParticipantDashboard />} />
           <Route path="/dashboard/organization" element={<OrganizationDashboard />} />
           <Route path="/profile/update" element={<ProfileUpdatePage />} />
-          <Route path="/participants/:eventId" element={<ParticipantListPage />} />
+          <Route path="/events/:eventId/participants" element={<ParticipantListPage />} /> {/* Add this route */}
         </Routes>
       </main>
       <Footer />
