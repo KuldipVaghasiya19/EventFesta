@@ -16,6 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -156,34 +159,46 @@ public class OrganizationController {
 
     @GetMapping("/events/{eventId}/participants")
     public ResponseEntity<?> getParticipantsByEventId(@PathVariable String eventId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔍 Principal: " + authentication.getPrincipal());
+        System.out.println("🔍 Authorities: " + authentication.getAuthorities());
+
         Optional<Event> eventOpt = eventRepository.findById(eventId);
         if (eventOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Event not found");
         }
 
         Event event = eventOpt.get();
-        List<Participant> participants = event.getRegisterdParticipants();
+        List<EventRegistration> registrations = event.getEventRegistrations();
 
-        if (participants == null || participants.isEmpty()) {
-            return ResponseEntity.ok(Collections.emptyList());
+        if (registrations == null || registrations.isEmpty()) {
+            // To provide the event details even if there are no participants,
+            // we create a map with the event and an empty participant list.
+            Map<String, Object> response = new HashMap<>();
+            response.put("event", event);
+            response.put("participants", Collections.emptyList());
+            return ResponseEntity.ok(response);
         }
+        System.out.println("registration : %s{}".formatted(registrations));
 
-        List<Map<String, Object>> participantDetails = participants.stream().map(p -> {
+        List<Map<String, Object>> participantDetails = registrations.stream().map(reg -> {
+            Participant p = reg.getParticipant();
             Map<String, Object> details = new HashMap<>();
+
             details.put("id", p.getId());
             details.put("name", p.getName());
             details.put("email", p.getEmail());
-            // Assuming `getPhone()` and `getUniversity()` are available on Participant
-            // and `getProfileImageUrl()`
-            details.put("phone", "123-456-7890"); // Placeholder
+            details.put("phone", reg.getPhoneNumber()); // Get phone number from registration
             details.put("location", p.getUniversity());
             details.put("profileImageUrl", p.getProfileImageUrl());
+            details.put("isPresent", reg.isPresent()); // Add attendance status
             return details;
         }).collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("event", event);
         response.put("participants", participantDetails);
+        System.out.println("REsponse"+response);
 
         return ResponseEntity.ok(response);
     }

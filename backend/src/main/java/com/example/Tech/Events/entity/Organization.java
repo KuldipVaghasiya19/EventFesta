@@ -11,6 +11,9 @@ import java.util.List;
 
 @Document(collection = "organizations")
 @Data
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class Organization {
 
@@ -69,117 +72,5 @@ public class Organization {
         this.since = since;
     }
 
-    public Organization() {}
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public @NonNull String getName() {
-        return name;
-    }
-
-    public void setName(@NonNull String name) {
-        this.name = name;
-    }
-
-    public @NonNull OrganizationType getType() {
-        return type;
-    }
-
-    public void setType(@NonNull OrganizationType type) {
-        this.type = type;
-    }
-
-    public @NonNull String getLocation() {
-        return location;
-    }
-
-    public void setLocation(@NonNull String location) {
-        this.location = location;
-    }
-
-    public @NonNull String getEmail() {
-        return email;
-    }
-
-    public void setEmail(@NonNull String email) {
-        this.email = email;
-    }
-
-    public @NonNull String getPassword() {
-        return password;
-    }
-
-    public void setPassword(@NonNull String password) {
-        this.password = password;
-    }
-
-    public int getSince() {
-        return since;
-    }
-
-    public void setSince(int since) {
-        this.since = since;
-    }
-
-    public String getAbout() {
-        return about;
-    }
-
-    public void setAbout(String about) {
-        this.about = about;
-    }
-
-    public String getContact() {
-        return contact;
-    }
-
-    public void setContact(String contact) {
-        this.contact = contact;
-    }
-
-    public String getProfileImageUrl() {
-        return profileImageUrl;
-    }
-
-    public void setProfileImageUrl(String profileImageUrl) {
-        this.profileImageUrl = profileImageUrl;
-    }
-
-    public String getProfileImagePublicId() {
-        return profileImagePublicId;
-    }
-
-    public void setProfileImagePublicId(String profileImagePublicId) {
-        this.profileImagePublicId = profileImagePublicId;
-    }
-
-    public List<Event> getOrganizedEvents() {
-        return organizedEvents;
-    }
-
-    public void setOrganizedEvents(List<Event> organizedEvents) {
-        this.organizedEvents = organizedEvents;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public int getTotalOrganizedEvents() {
-        return totalOrganizedEvents;
-    }
-
-    public void setTotalOrganizedEvents(int totalOrganizedEvents) {
-        this.totalOrganizedEvents = totalOrganizedEvents;
-    }
 }

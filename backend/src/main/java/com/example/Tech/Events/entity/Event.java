@@ -66,7 +66,7 @@ public class Event {
 
     @JsonIgnore
     @DBRef
-    private List<Participant> registerdParticipants;
+    private List<EventRegistration> eventRegistrations;
 
     @JsonIgnore
     @DBRef
@@ -76,9 +76,9 @@ public class Event {
         return maxParticipants - currentParticipants;
     }
 
-    public boolean registerParticipant(Participant participant) {
+    public boolean registerParticipant(EventRegistration eventRegistration) {
         if (currentParticipants < maxParticipants) {
-            registerdParticipants.add(participant);
+            eventRegistrations.add(eventRegistration);
             currentParticipants++;
             return true;
         }

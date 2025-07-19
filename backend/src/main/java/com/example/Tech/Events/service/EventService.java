@@ -1,6 +1,7 @@
 package com.example.Tech.Events.service;
 
 import com.example.Tech.Events.entity.Event;
+import com.example.Tech.Events.entity.EventRegistration;
 import com.example.Tech.Events.entity.Participant;
 import com.example.Tech.Events.repository.EventRepository;
 import com.example.Tech.Events.repository.ParticipantRepository;
@@ -83,10 +84,13 @@ public class EventService {
 //        eventRepository.deleteById(id);
 //    }
 
-    public boolean registerParticipant(String eventId, Participant participant) {
+    public boolean registerParticipant(String eventId, EventRegistration registration) {
         Event event = eventRepository.findById(eventId).orElse(null);
         if (event != null && event.getCurrentParticipants() < event.getMaxParticipants()) {
-            event.getRegisterdParticipants().add(participant);
+            if (event.getEventRegistrations() == null) {
+                event.setEventRegistrations(new java.util.ArrayList<>());
+            }
+            event.getEventRegistrations().add(registration);
             event.setCurrentParticipants(event.getCurrentParticipants() + 1);
             eventRepository.save(event);
             return true;

@@ -40,8 +40,12 @@ public class ReminderEmailService {
     }
 
     private void sendReminderToParticipants(Event event) {
-        List<String> emails = event.getRegisterdParticipants().stream()
-                .map(Participant::getEmail)
+        if (event.getEventRegistrations() == null || event.getEventRegistrations().isEmpty()) {
+            return;
+        }
+
+        List<String> emails = event.getEventRegistrations().stream()
+                .map(registration -> registration.getParticipant().getEmail())
                 .collect(Collectors.toList());
 
         if (emails.isEmpty()) return;

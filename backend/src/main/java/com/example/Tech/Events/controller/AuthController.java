@@ -6,13 +6,17 @@ import com.example.Tech.Events.service.ImageUploadService;
 import com.example.Tech.Events.service.OrganizationService;
 import com.example.Tech.Events.service.ParticipantService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.websocket.server.ServerEndpoint;
+import jakarta.mail.Message;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +32,7 @@ public class AuthController {
     private final OrganizationService organizationService;
     private final ParticipantService participantService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     @Autowired
     private ImageUploadService imageUploadService;
@@ -35,10 +40,11 @@ public class AuthController {
     @Autowired
     public AuthController(OrganizationService organizationService,
                           ParticipantService participantService,
-                          BCryptPasswordEncoder passwordEncoder) {
+                          BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
         this.organizationService = organizationService;
         this.participantService = participantService;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping(value = "/register/organization", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -69,6 +75,7 @@ public class AuthController {
                 organization.setPassword(rawPassword);
             }
 
+
             Organization savedOrg = organizationService.createOrganization(organization);
 
             return ResponseEntity.ok(savedOrg);
@@ -83,7 +90,7 @@ public class AuthController {
 
 
     @PostMapping("/login/organization")
-    public ResponseEntity<?> loginOrganization(@RequestBody Organization loginRequest) {
+    public ResponseEntity<?> loginOrganization(@RequestBody Organization loginRequest, HttpServletRequest httpRequest) {
         Optional<Organization> orgOptional = organizationService.findByEmail(loginRequest.getEmail());
         if (orgOptional.isEmpty()) {
             return ResponseEntity.status(404).body("Organization not found");
@@ -93,6 +100,14 @@ public class AuthController {
         if (!passwordEncoder.matches(loginRequest.getPassword(), org.getPassword())) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
+
+        System.out.println("🔐 Authenticating user: " + loginRequest.getEmail());
 
         return ResponseEntity.ok(org);
     }
@@ -139,7 +154,7 @@ public class AuthController {
 
 
     @PostMapping("/login/participant")
-    public ResponseEntity<?> loginParticipant(@RequestBody Participant loginRequest) {
+    public ResponseEntity<?> loginParticipant(@RequestBody Participant loginRequest,HttpServletRequest httpRequest) {
         Optional<Participant> participantOpt = participantService.getParticipantByEmail(loginRequest.getEmail());
         if (participantOpt.isEmpty()) {
             return ResponseEntity.status(404).body("Participant not found");
@@ -150,6 +165,14 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
 
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
+
+        System.out.println("🔐 Authenticating user: " + loginRequest.getEmail());
         return ResponseEntity.ok(participant);
     }
 }

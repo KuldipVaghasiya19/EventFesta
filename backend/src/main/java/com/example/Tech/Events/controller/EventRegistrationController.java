@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"} )
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"})
 public class EventRegistrationController {
 
     private static final Logger logger = LoggerFactory.getLogger(EventRegistrationController.class);
@@ -74,11 +74,11 @@ public class EventRegistrationController {
             logger.info("Registration saved successfully with ID: {}", savedRegistration.getId());
 
             // Add participant to event
-            if (event.getRegisterdParticipants() == null) {
-                event.setRegisterdParticipants(new ArrayList<>());
+            if (event.getEventRegistrations() == null) {
+                event.setEventRegistrations(new ArrayList<>());
             }
-            if (!event.getRegisterdParticipants().contains(participant)) {
-                event.getRegisterdParticipants().add(participant);
+            if (!event.getEventRegistrations().contains(registration)) {
+                event.getEventRegistrations().add(registration);
                 eventRepository.save(event);
                 logger.info("Participant '{}' added to event '{}'", participant.getName(), event.getTitle());
             }
