@@ -13,6 +13,8 @@ const formatDate = (dateString) => {
 // --- Main function to generate the PDF's HTML content ---
 export const generatePDFContent = (event, participants, organizationName) => {
     const currentDate = formatDate(new Date());
+    // New Logic: Check if the event date is in the past
+    const isEventOver = new Date() >= new Date(event.eventDate);
 
     // A subtle, tech-themed SVG watermark, base64 encoded to be self-contained
     const watermarkSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZGVmcz48cGF0dGVybiBpZD0icGF0dGVybiIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBwYXR0ZXJuVHJhbnNmb3JtPSJyb3RhdGUoNDUpIj48cGF0aCBkPSJNLTEwIDMwIEwzMCAtMTAgTTAgNDAgTDQwIDAiIHN0cm9rZT0iI2U2ZThlYSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI3BhdHRlcm4pIi8+PC9zdmc+`;
@@ -162,9 +164,9 @@ export const generatePDFContent = (event, participants, organizationName) => {
                         <thead>
                             <tr>
                                 <th style="width: 5%;">#</th>
-                                <th style="width: 30%;">Name</th>
+                                <th style="width: 35%;">Name</th>
                                 <th style="width: 35%;">Email</th>
-                                <th style="width: 30%;">Location/University</th>
+                                <th style="width: 25%;">Attendance Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -173,7 +175,7 @@ export const generatePDFContent = (event, participants, organizationName) => {
                                     <td>${index + 1}</td>
                                     <td><div class="name">${p.name || 'N/A'}</div></td>
                                     <td>${p.email || 'N/A'}</td>
-                                    <td>${p.location || 'N/A'}</td>
+                                    <td>${isEventOver ? (p.isPresent ? 'Present' : 'Absent') : ''}</td>
                                 </tr>
                             `).join('')}
                             ${participants.length === 0 ? '<tr><td colspan="4" style="text-align:center; padding: 40px; color: #64748b;">No participants have registered yet.</td></tr>' : ''}
@@ -206,9 +208,7 @@ export const downloadParticipantsPDF = (event, participants, organizationName) =
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       printWindow.focus();
-      // Use 'onafterprint' for better reliability in closing the window
       printWindow.onafterprint = () => printWindow.close();
-      // Trigger print
       printWindow.print();
     } else {
       alert("Please allow pop-ups for this site to print the participant list.");

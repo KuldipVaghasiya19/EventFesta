@@ -11,23 +11,28 @@ const ParticipantListPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEventOver, setIsEventOver] = useState(false);
 
   useEffect(() => {
     const fetchEventAndParticipants = async () => {
       try {
         setLoading(true);
         setError(null);
-        // This API call fetches both the event details and the participant list
-        const response = await fetch(`http://localhost:8080/api/organizations/events/${eventId}/participants`);
+        const response = await fetch(`http://localhost:8080/api/organizations/events/${eventId}/participants`,{
+          credentials:'include'
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch event and participant data');
         }
         const data = await response.json();
         
-        // Set both the event object and the participants array from the response
-        setEvent(data.event); 
+        setEvent(data.event);
         setParticipants(data.participants || []);
         setFilteredParticipants(data.participants || []);
+
+        if (data.event && data.event.eventDate) {
+          setIsEventOver(new Date() >= new Date(data.event.eventDate));
+        }
 
       } catch (err) {
         setError(err.message);
@@ -53,17 +58,9 @@ const ParticipantListPage = () => {
     setFilteredParticipants(filtered);
   }, [searchTerm, participants]);
 
-  /**
-   * Handles the PDF download.
-   * It checks if the event object and its organizer details are available.
-   * If they are, it passes the organizer's name to the PDF generator.
-   * If not, it falls back to a default name.
-   */
   const handleDownloadPDF = () => {
     if (event && participants) {
-      // ✅ This is the key part: We check for event.organizer and get the name.
-      const organizationName = event.organizer && event.organizer.name ? event.organizer.name : "EventFesta";
-      
+      const organizationName = event.organizer?.name || "EventFesta";
       downloadParticipantsPDF(event, participants, organizationName);
     } else {
       alert("Participant data is not available to download.");
@@ -137,13 +134,13 @@ const ParticipantListPage = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Attendance Status</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredParticipants.length > 0 ? (
-                filteredParticipants.map((participant) => (
-                  <tr key={participant.id}>
+                filteredParticipants.map((participant, index) => (
+                  <tr key={`${participant.id}-${index}`}> {/* ✅ FIX: Key is now guaranteed to be unique */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -156,7 +153,9 @@ const ParticipantListPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{participant.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{participant.phone || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{participant.location || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {isEventOver ? (participant.isPresent ? 'Present' : 'Absent') : ''}
+                    </td>
                   </tr>
                 ))
               ) : (

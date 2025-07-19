@@ -57,6 +57,10 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
     if (!formData.maxParticipants) newErrors.maxParticipants = 'Maximum participants is required';
     if (!formData.registrationFees && formData.registrationFees !== '0') newErrors.registrationFees = 'Registration fees is required';
     
+    // NEW: At least one schedule item is mandatory
+    if (formData.schedule.length === 0) newErrors.schedule = 'At least one schedule item is required';
+    
+    // UPDATED: Date validation - registration deadline must be before event date
     if (formData.eventDate && formData.lastRegistertDate) {
       if (new Date(formData.lastRegistertDate) >= new Date(formData.eventDate)) {
         newErrors.lastRegistertDate = 'Registration deadline must be before the event date';
@@ -84,7 +88,6 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
           [name]: type === 'file' ? files[0] : value
         }));
     }
-
 
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -149,6 +152,11 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
       };
       setFormData(prev => ({ ...prev, schedule: [...prev.schedule, scheduleItemToAdd] }));
       setNewScheduleItem({ startTime: '', endTime: '', title: '', speaker: '' });
+      
+      // Clear schedule error when item is added
+      if (errors.schedule) {
+        setErrors(prev => ({ ...prev, schedule: '' }));
+      }
     }
   };
 
@@ -161,7 +169,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
             <h2 className="text-xl font-bold text-white">Basic Information</h2>
           </div>
           <div className="p-8">
@@ -169,7 +177,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
               <div className="md:col-span-2">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">Event Name <span className="text-red-500">*</span></label>
                 <input type="text" id="title" name="title" value={formData.title} onChange={handleChange}
-                  className={`px-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`px-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Enter event name"
                 />
                 {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
@@ -179,7 +187,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                 <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">Event Type <span className="text-red-500">*</span></label>
                 {/* CHANGED: name attribute is now 'type' */}
                 <select id="type" name="type" value={formData.type} onChange={handleChange}
-                  className={`px-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white ${errors.type ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`px-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white ${errors.type ? 'border-red-500' : 'border-gray-300'}`}
                 >
                   <option value="">Select event type</option>
                   {eventTypes.map((type, index) => (
@@ -205,7 +213,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">About Event <span className="text-red-500">*</span></label>
                  {/* CHANGED: name attribute is now 'description' */}
                 <textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={4}
-                  className={`px-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`px-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Describe your event..."
                 />
                 {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
@@ -216,7 +224,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
         
         {/* Event Details */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white">Event Details</h2>
             </div>
             <div className="p-8">
@@ -225,8 +233,9 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                     <label htmlFor="eventDate" className="block text-sm font-medium text-gray-700 mb-2">Event Date <span className="text-red-500">*</span></label>
                     <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input type="datetime-local" id="eventDate" name="eventDate" value={formData.eventDate} onChange={handleChange}
-                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.eventDate ? 'border-red-500' : 'border-gray-300'}`} />
+                        {/* UPDATED: Changed from datetime-local to date */}
+                        <input type="date" id="eventDate" name="eventDate" value={formData.eventDate} onChange={handleChange}
+                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.eventDate ? 'border-red-500' : 'border-gray-300'}`} />
                     </div>
                     {errors.eventDate && <p className="mt-1 text-sm text-red-500">{errors.eventDate}</p>}
                 </div>
@@ -235,9 +244,9 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                     <label htmlFor="lastRegistertDate" className="block text-sm font-medium text-gray-700 mb-2">Registration Deadline <span className="text-red-500">*</span></label>
                     <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        {/* CHANGED: name attribute is now 'lastRegistertDate' */}
-                        <input type="datetime-local" id="lastRegistertDate" name="lastRegistertDate" value={formData.lastRegistertDate} onChange={handleChange}
-                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.lastRegistertDate ? 'border-red-500' : 'border-gray-300'}`} />
+                        {/* UPDATED: Changed from datetime-local to date */}
+                        <input type="date" id="lastRegistertDate" name="lastRegistertDate" value={formData.lastRegistertDate} onChange={handleChange}
+                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.lastRegistertDate ? 'border-red-500' : 'border-gray-300'}`} />
                     </div>
                     {errors.lastRegistertDate && <p className="mt-1 text-sm text-red-500">{errors.lastRegistertDate}</p>}
                 </div>
@@ -247,7 +256,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                     <div className="relative">
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input type="text" id="location" name="location" value={formData.location} onChange={handleChange}
-                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
+                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
                             placeholder="Event location" />
                     </div>
                     {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
@@ -258,7 +267,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                     <div className="relative">
                         <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input type="number" id="maxParticipants" name="maxParticipants" value={formData.maxParticipants} onChange={handleChange} min="1"
-                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.maxParticipants ? 'border-red-500' : 'border-gray-300'}`}
+                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.maxParticipants ? 'border-red-500' : 'border-gray-300'}`}
                             placeholder="100" />
                     </div>
                     {errors.maxParticipants && <p className="mt-1 text-sm text-red-500">{errors.maxParticipants}</p>}
@@ -269,7 +278,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                     <div className="relative">
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input type="number" id="registrationFees" name="registrationFees" value={formData.registrationFees} onChange={handleChange} min="0" step="0.01"
-                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${errors.registrationFees ? 'border-red-500' : 'border-gray-300'}`}
+                            className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.registrationFees ? 'border-red-500' : 'border-gray-300'}`}
                             placeholder="If free, enter 0" />
                     </div>
                     {errors.registrationFees && <p className="mt-1 text-sm text-red-500">{errors.registrationFees}</p>}
@@ -280,15 +289,15 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
 
         {/* Tags */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
               <h2 className="text-xl font-bold text-white">Tags</h2>
           </div>
           <div className="p-8">
               <div className="flex gap-3 mb-6">
                   <input type="text" value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Add a tag (e.g., React, AI, Blockchain)"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} />
-                  <button type="button" onClick={addTag} className="flex items-center px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">
+                  <button type="button" onClick={addTag} className="flex items-center px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
                       <Plus className="h-4 w-4 mr-1" /> Add
                   </button>
               </div>
@@ -307,7 +316,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
         
         {/* NEW: Prizes section completely reworked to match the entity */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white">Prizes</h2>
             </div>
             <div className="p-8">
@@ -317,7 +326,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                         <div className="relative">
                             <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input type="text" id="first" name="first" value={formData.prizes.first} onChange={handleChange}
-                                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" placeholder="e.g., $1000 Cash" />
+                                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., $1000 Cash" />
                         </div>
                     </div>
                      <div>
@@ -325,7 +334,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                         <div className="relative">
                             <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input type="text" id="second" name="second" value={formData.prizes.second} onChange={handleChange}
-                                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" placeholder="e.g., Swag Pack" />
+                                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., Swag Pack" />
                         </div>
                     </div>
                      <div>
@@ -333,7 +342,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
                         <div className="relative">
                             <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input type="text" id="third" name="third" value={formData.prizes.third} onChange={handleChange}
-                                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" placeholder="e.g., Certificate" />
+                                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., Certificate" />
                         </div>
                     </div>
                 </div>
@@ -342,19 +351,21 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
 
         {/* Schedule */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white">Schedule</h2>
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <h2 className="text-xl font-bold text-white">Schedule <span className="text-red-200">*</span></h2>
             </div>
             <div className="p-8">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-6 items-end">
-                    <input type="time" value={newScheduleItem.startTime} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, startTime: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
-                    <input type="time" value={newScheduleItem.endTime} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, endTime: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
-                    <input type="text" value={newScheduleItem.title} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, title: e.target.value }))} placeholder="Session title" className="lg:col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
-                    <input type="text" value={newScheduleItem.speaker} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, speaker: e.target.value }))} placeholder="Speaker (optional)" className="lg:col-span-3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
-                    <button type="button" onClick={addScheduleItem} className="flex items-center justify-center px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">
+                    <input type="time" value={newScheduleItem.startTime} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, startTime: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="time" value={newScheduleItem.endTime} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, endTime: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="text" value={newScheduleItem.title} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, title: e.target.value }))} placeholder="Session title" className="lg:col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="text" value={newScheduleItem.speaker} onChange={(e) => setNewScheduleItem(prev => ({ ...prev, speaker: e.target.value }))} placeholder="Speaker (optional)" className="lg:col-span-3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <button type="button" onClick={addScheduleItem} className="flex items-center justify-center px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
                       <Plus className="h-4 w-4 mr-1" /> Add
                     </button>
                 </div>
+                {/* NEW: Schedule validation error display */}
+                {errors.schedule && <p className="mb-4 text-sm text-red-500">{errors.schedule}</p>}
                 <div className="space-y-2">
                     {formData.schedule.map((item, index) => (
                         <div key={index} className="flex items-center justify-between bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-lg">
@@ -372,16 +383,16 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
 
         {/* Judges */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white">Judges</h2>
             </div>
             <div className="p-8">
                 {/* CHANGED: Removed 'Role/Title' input */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 items-end">
-                    <input type="text" value={newJudge.name} onChange={(e) => setNewJudge(prev => ({ ...prev, name: e.target.value }))} placeholder="Judge name" className="md:col-span-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+                    <input type="text" value={newJudge.name} onChange={(e) => setNewJudge(prev => ({ ...prev, name: e.target.value }))} placeholder="Judge name" className="md:col-span-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                     <div className="flex gap-2 md:col-span-2">
-                        <input type="text" value={newJudge.company} onChange={(e) => setNewJudge(prev => ({ ...prev, company: e.target.value }))} placeholder="Company (optional)" className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
-                        <button type="button" onClick={addJudge} className="p-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"><Plus className="h-5 w-5" /></button>
+                        <input type="text" value={newJudge.company} onChange={(e) => setNewJudge(prev => ({ ...prev, company: e.target.value }))} placeholder="Company (optional)" className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                        <button type="button" onClick={addJudge} className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"><Plus className="h-5 w-5" /></button>
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -401,16 +412,16 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
 
         {/* Speakers */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white">Speakers</h2>
             </div>
             <div className="p-8">
                  {/* CHANGED: Removed 'Role/Title' input */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 items-end">
-                    <input type="text" value={newSpeaker.name} onChange={(e) => setNewSpeaker(prev => ({ ...prev, name: e.target.value }))} placeholder="Speaker name" className="md:col-span-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+                    <input type="text" value={newSpeaker.name} onChange={(e) => setNewSpeaker(prev => ({ ...prev, name: e.target.value }))} placeholder="Speaker name" className="md:col-span-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                     <div className="flex gap-2 md:col-span-2">
-                        <input type="text" value={newSpeaker.company} onChange={(e) => setNewSpeaker(prev => ({ ...prev, company: e.target.value }))} placeholder="Company (optional)" className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
-                        <button type="button" onClick={addSpeaker} className="p-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"><Plus className="h-5 w-5" /></button>
+                        <input type="text" value={newSpeaker.company} onChange={(e) => setNewSpeaker(prev => ({ ...prev, company: e.target.value }))} placeholder="Company (optional)" className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                        <button type="button" onClick={addSpeaker} className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"><Plus className="h-5 w-5" /></button>
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -431,7 +442,7 @@ const CreateEventForm = ({ onSubmit, isSubmitting = false }) => {
         {/* Submit Button */}
         <div className="flex justify-end pt-4">
           <button type="submit" disabled={isSubmitting}
-            className="w-full md:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors disabled:opacity-50"
+            className="w-full md:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
           >
             {isSubmitting ? 'Creating Event...' : 'Create Event'}
           </button>

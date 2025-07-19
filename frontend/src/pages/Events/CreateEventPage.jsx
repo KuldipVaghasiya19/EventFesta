@@ -12,6 +12,7 @@ const CreateEventPage = () => {
   // Get organization ID from sessionStorage
   const getOrganizationId = () => {
     const user = JSON.parse(sessionStorage.getItem("techevents_user"));
+    console.log(user.role);
     return user ? user.id : null;
   };
     
