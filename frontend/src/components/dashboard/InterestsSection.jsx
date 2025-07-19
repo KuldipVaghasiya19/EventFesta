@@ -1,3 +1,4 @@
+// frontend/src/components/dashboard/InterestsSection.jsx
 import { useState, useEffect } from 'react';
 import { Plus, X, Tag, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 
@@ -35,6 +36,7 @@ const InterestsSection = ({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include' // crucial for sending session cookie
       });
       
       if (response.ok) {
@@ -98,6 +100,7 @@ const InterestsSection = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ interest: trimmedInterest }),
+        credentials: 'include' // crucial for sending session cookie
       });
 
       if (response.ok) {
@@ -105,13 +108,13 @@ const InterestsSection = ({
         console.log('Interest added successfully:', data);
         
         // Update with backend response
-        if (data.tags && Array.isArray(data.tags)) {
-          setInterests(data.tags);
+        if (data.interest && Array.isArray(data.interest)) {
+          setInterests(data.interest);
           if (setParentInterests) {
-            setParentInterests(data.tags);
+            setParentInterests(data.interest);
           }
         } else {
-          // Fallback: add locally if backend doesn't return tags
+          // Fallback: add locally if backend doesn't return interest
           const updatedInterests = [...interests, trimmedInterest];
           setInterests(updatedInterests);
           if (setParentInterests) {
@@ -154,6 +157,7 @@ const InterestsSection = ({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include' // crucial for sending session cookie
       });
 
       if (response.ok) {
@@ -161,13 +165,13 @@ const InterestsSection = ({
         console.log('Interest removed successfully:', data);
         
         // Update with backend response
-        if (data.tags && Array.isArray(data.tags)) {
-          setInterests(data.tags);
+        if (data.interest && Array.isArray(data.interest)) {
+          setInterests(data.interest);
           if (setParentInterests) {
-            setParentInterests(data.tags);
+            setParentInterests(data.interest);
           }
         } else {
-          // Fallback: remove locally if backend doesn't return tags
+          // Fallback: remove locally if backend doesn't return interest
           const updatedInterests = interests.filter(interest => interest !== interestToRemove);
           setInterests(updatedInterests);
           if (setParentInterests) {
@@ -211,6 +215,7 @@ const InterestsSection = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ interest: suggestion }),
+        credentials: 'include' // crucial for sending session cookie
       });
 
       if (response.ok) {
@@ -218,13 +223,13 @@ const InterestsSection = ({
         console.log('Suggested interest added:', data);
         
         // Update with backend response
-        if (data.tags && Array.isArray(data.tags)) {
-          setInterests(data.tags);
+        if (data.interest && Array.isArray(data.interest)) {
+          setInterests(data.interest);
           if (setParentInterests) {
-            setParentInterests(data.tags);
+            setParentInterests(data.interest);
           }
         } else {
-          // Fallback: add locally if backend doesn't return tags
+          // Fallback: add locally if backend doesn't return interest
           const updatedInterests = [...interests, suggestion];
           setInterests(updatedInterests);
           if (setParentInterests) {
@@ -264,20 +269,21 @@ const InterestsSection = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ tags: newInterests }),
+        body: JSON.stringify({ interest: newInterests }),
+        credentials: 'include' // crucial for sending session cookie
       });
 
       if (response.ok) {
         const data = await response.json();
         console.log('Bulk update successful:', data);
         
-        if (data.tags && Array.isArray(data.tags)) {
-          setInterests(data.tags);
+        if (data.interest && Array.isArray(data.interest)) {
+          setInterests(data.interest);
           if (setParentInterests) {
-            setParentInterests(data.tags);
+            setParentInterests(data.interest);
           }
         } else {
-          // Fallback: update locally if backend doesn't return tags
+          // Fallback: update locally if backend doesn't return interest
           setInterests(newInterests);
           if (setParentInterests) {
             setParentInterests(newInterests);
@@ -350,7 +356,7 @@ const InterestsSection = ({
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">My Interests</h2>
           <p className="text-lg text-slate-600">
-            Add tags to showcase your interests and skills. This helps us recommend relevant events for you.
+            Add interest to showcase your interests and skills. This helps us recommend relevant events for you.
           </p>
         </div>
 
@@ -401,7 +407,7 @@ const InterestsSection = ({
           </div>
         </div>
         
-        {/* Interest Tags */}
+        {/* Interest interest */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-slate-900">Your Interests ({interests.length})</h3>
@@ -419,7 +425,6 @@ const InterestsSection = ({
                 title="Refresh interests"
               >
                 <RefreshCw className="h-4 w-4" />
-                Refresh
               </button>
               {interests.length > 0 && (
                 <button

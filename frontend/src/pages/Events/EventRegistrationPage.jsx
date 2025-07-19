@@ -1,7 +1,6 @@
-// Enhanced EventRegistrationPage.jsx with role-based access control
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, Users, CreditCard, CheckCircle, AlertCircle, LogIn, ShieldOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertCircle, LogIn, ShieldOff } from 'lucide-react';
 import EventRegistrationForm from '../../components/forms/EventRegistrationForm';
 
 const EventRegistrationPage = () => {
@@ -50,12 +49,11 @@ const EventRegistrationPage = () => {
         
         const transformedEvent = {
           ...eventData,
-          id: eventData._id,
+          id: eventData.id,
           date: eventData.eventDate,
           image: eventData.imageUrl,
           registrationFees: eventData.registrationFees || 0,
-          prices: eventData.registrationFees === 0 ? ['Free'] : [`₹${eventData.registrationFees}`],
-          currentParticipants: eventData.registerdParticipants ? eventData.registerdParticipants.length : 0,
+          currentParticipants: eventData.currentParticipants || 0,
           maxParticipants: eventData.maxParticipants || null,
           lastRegistertDate: eventData.lastRegistertDate || null,
           type: eventData.type || 'Tech Event',
@@ -92,12 +90,6 @@ const EventRegistrationPage = () => {
     return true;
   };
 
-  const createOrFindParticipant = async (formData) => {
-      // Logic to create or find participant remains the same
-      // This is a placeholder for your actual implementation
-      return user.id; 
-  };
-
   const handleSubmit = async (formData) => {
     if (!user || user.role !== 'PARTICIPANT') {
         setError("Only participants can register for events.");
@@ -110,10 +102,8 @@ const EventRegistrationPage = () => {
       
       const registrationData = {
         participantName: formData.participantName,
-        registeredEmail: formData.registeredEmail,
         contactEmail: formData.contactEmail,
         phoneNumber: formData.phoneNumber,
-        collegeOrOrganization: formData.collegeOrOrganization,
         yearOrDesignation: formData.yearOrDesignation,
         expectation: formData.expectation,
       };
@@ -122,6 +112,7 @@ const EventRegistrationPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(registrationData),
+        credentials: 'include', // Include cookies in the request
       });
 
       if (!response.ok) {
@@ -130,11 +121,39 @@ const EventRegistrationPage = () => {
       }
 
       const result = await response.json();
+
+      // Update user data in storage after successful registration
+      const storageKey = 'techevents_user';
+      const storedUser = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        
+        if (!Array.isArray(userData.registerdEvents)) {
+          userData.registerdEvents = [];
+        }
+
+        // Add the new event if it's not already in the list
+        if (!userData.registerdEvents.some(e => e.id === event.id)) {
+          userData.registerdEvents.push(event);
+          userData.totaleventsRegisterd = userData.registerdEvents.length;
+        }
+
+        // Save the updated user data back to the correct storage
+        if (localStorage.getItem(storageKey)) {
+          localStorage.setItem(storageKey, JSON.stringify(userData));
+        } else {
+          sessionStorage.setItem(storageKey, JSON.stringify(userData));
+        }
+        
+        // Update the component's user state to reflect the change immediately
+        setUser(userData);
+      }
+
       setRegistrationStatus({
         type: 'success',
         message: 'Registration successful!',
         attendanceCode: result.attendanceCode,
-        details: 'Check your email for the QR code and event details.'
+        details: 'Check your registered email for the QR code and event details.'
       });
       
       setTimeout(() => {
@@ -168,7 +187,6 @@ const EventRegistrationPage = () => {
   return (
     <div className="pt-20 pb-16 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 md:px-6">
-        {/* Header and Event Summary */}
         <div className="mb-8">
             <div className="flex items-center mb-4">
                 <Link to={`/events/${id}`} className="flex items-center text-gray-600 hover:text-primary-500">
@@ -181,12 +199,6 @@ const EventRegistrationPage = () => {
                     Register for <span className="text-primary-500">{event.title}</span>
                 </h1>
             </div>
-        </div>
-        
-        <div className="max-w-2xl mx-auto mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-             {/* Event summary content... */}
-          </div>
         </div>
         
         <div className="max-w-2xl mx-auto">
@@ -215,18 +227,31 @@ const EventRegistrationPage = () => {
                     <p className="text-gray-600">We're sorry, but registration for this event is no longer available.</p>
                 </div>
             ) : registrationStatus?.type === 'success' ? (
-                 <div className="bg-green-50 border-green-200 text-green-700 rounded-lg p-6">
-                    <CheckCircle className="h-6 w-6 mr-2" />
-                    <span className="font-bold text-lg">{registrationStatus.message}</span>
-                    <p className="text-sm">{registrationStatus.details}</p>
+                 <div className="bg-green-50 border-green-200 text-green-700 rounded-lg p-6 flex items-start">
+                    <CheckCircle className="h-6 w-6 mr-3 flex-shrink-0" />
+                    <div>
+                        <span className="font-bold text-lg">{registrationStatus.message}</span>
+                        <p className="text-sm">{registrationStatus.details}</p>
+                    </div>
                  </div>
             ) : (
-                <EventRegistrationForm
-                    event={event}
-                    onSubmit={handleSubmit}
-                    isSubmitting={isSubmitting}
-                    initialUserData={{ name: user.name, email: user.email }}
-                />
+                <>
+                    {registrationStatus?.type === 'error' && (
+                        <div className="bg-red-50 border-red-200 text-red-700 rounded-lg p-4 mb-6 flex items-start">
+                            <AlertCircle className="h-5 w-5 mr-3 flex-shrink-0" />
+                            <div>
+                                <span className="font-bold">Registration Failed</span>
+                                <p className="text-sm">{registrationStatus.message}</p>
+                            </div>
+                        </div>
+                    )}
+                    <EventRegistrationForm
+                        event={event}
+                        onSubmit={handleSubmit}
+                        isSubmitting={isSubmitting}
+                        initialUserData={{ name: user.name, email: user.email }}
+                    />
+                </>
             )}
         </div>
       </div>

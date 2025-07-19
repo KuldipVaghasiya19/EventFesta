@@ -54,53 +54,11 @@ const ParticipantDashboard = () => {
 
         setUser(transformedUser);
         
-        // Check if user data already contains registered events and interests
-        if (userData.registeredEvents && Array.isArray(userData.registeredEvents)) {
-          // Transform registered events to match component expectations
-          const transformedEvents = userData.registeredEvents.map(event => ({
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            type: event.type,
-            date: new Date(event.eventDate).toISOString(),
-            eventDate: event.eventDate,
-            lastRegistrationDate: event.lastRegistertDate,
-            location: event.location,
-            registrationFees: event.registrationFees,
-            maxParticipants: event.maxParticipants,
-            currentParticipants: event.currentParticipants,
-            remainingSeats: event.remainingSeats,
-            imageUrl: event.imageUrl,
-            imagePublicId: event.imagePublicId,
-            tags: event.tags || [],
-            speakers: event.speakers || [],
-            judges: event.judges || [],
-            prizes: event.prizes || {},
-            schedule: event.schedule || [],
-            organizer: event.organizer || {
-              id: event.organizerId,
-              name: event.organizerName,
-              avatar: event.organizerAvatar
-            }
-          }));
-          
-          setRegisteredEvents(transformedEvents);
-          
-          // Update total events registered count
-          transformedUser.totalEventsRegistered = transformedEvents.length;
-          setUser(transformedUser);
-        } else {
-          // If not in user data, fetch from API
-          await fetchRegisteredEvents(userData.id);
-        }
-
-        // Handle interests
-        if (userData.interests && Array.isArray(userData.interests)) {
-          setInterests(userData.interests);
-        } else {
-          // If not in user data, fetch from API
-          await fetchInterests(userData.id);
-        }
+        // --- FIX: Always fetch fresh data from the server on load ---
+        // This prevents issues with stale data from localStorage.
+        await fetchRegisteredEvents(userData.id);
+        await fetchInterests(userData.id);
+        
       } else if (userData && userData.role === 'ORGANIZATION') {
         // If user is organization, redirect to organization dashboard
         navigate('/organization/dashboard', { replace: true });
@@ -132,19 +90,16 @@ const ParticipantDashboard = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization header if you have authentication token
-          // 'Authorization': `Bearer ${localStorage.getItem('techevents_token') || sessionStorage.getItem('techevents_token')}`
-        }
+        },
+        credentials: 'include' // Ensure cookies are sent
       });
 
       if (response.ok) {
         const registeredEventsData = await response.json();
         console.log('Registered events fetched:', registeredEventsData);
         
-        // Ensure we have an array
         const eventsArray = Array.isArray(registeredEventsData) ? registeredEventsData : [];
         
-        // Transform events if needed
         const transformedEvents = eventsArray.map(event => ({
           id: event.id,
           title: event.title,
@@ -174,29 +129,17 @@ const ParticipantDashboard = () => {
         
         setRegisteredEvents(transformedEvents);
         
-        // Update user's total events registered count
+        // Update user's total events registered count based on the fresh data
         setUser(prevUser => ({
           ...prevUser,
           totalEventsRegistered: transformedEvents.length
         }));
       } else {
         console.error('Failed to fetch registered events:', response.status, response.statusText);
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('Error details:', errorData);
-        
-        // Set empty array on error
         setRegisteredEvents([]);
       }
     } catch (error) {
       console.error('Error fetching registered events:', error);
-      
-      // Check if it's a CORS error
-      if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-        console.warn('CORS error detected. Please configure CORS on your backend server.');
-        console.warn('Add Access-Control-Allow-Origin header for http://localhost:5173');
-      }
-      
-      // Set empty array on error
       setRegisteredEvents([]);
     }
   };
@@ -214,61 +157,42 @@ const ParticipantDashboard = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization header if you have authentication token
-          // 'Authorization': `Bearer ${localStorage.getItem('techevents_token') || sessionStorage.getItem('techevents_token')}`
-        }
+        },
+        credentials: 'include'
       });
 
       if (response.ok) {
         const interestsData = await response.json();
         console.log('Interests fetched:', interestsData);
         
-        // Ensure we have an array
         const interestsArray = Array.isArray(interestsData) ? interestsData : [];
         setInterests(interestsArray);
       } else {
         console.error('Failed to fetch interests:', response.status, response.statusText);
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('Error details:', errorData);
-        
-        // Set empty array on error
         setInterests([]);
       }
     } catch (error) {
       console.error('Error fetching interests:', error);
-      
-      // Check if it's a CORS error
-      if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-        console.warn('CORS error detected. Please configure CORS on your backend server.');
-        console.warn('Add Access-Control-Allow-Origin header for http://localhost:5173');
-        console.warn('Backend should respond with: Access-Control-Allow-Origin: http://localhost:5173');
-      }
-      
-      // Set empty array on error
       setInterests([]);
     }
   };
 
   const handleLogout = () => {
-    // Clear stored data
     localStorage.removeItem('techevents_user');
     sessionStorage.removeItem('techevents_user');
     localStorage.removeItem('techevents_token');
     sessionStorage.removeItem('techevents_token');
     
-    // Redirect to home page
     navigate('/', { replace: true });
   };
 
   const handleEventRegister = () => {
-    // Refresh registered events after registration
     if (user?.id) {
       fetchRegisteredEvents(user.id);
     }
   };
 
   const handleInterestsUpdate = () => {
-    // Refresh interests after update
     if (user?.id) {
       fetchInterests(user.id);
     }
@@ -303,7 +227,6 @@ const ParticipantDashboard = () => {
 
   return (
     <div className="pt-20 pb-16 min-h-screen bg-slate-50">
-      {/* Profile Section */}
       <ProfileSection 
         user={user} 
         type="participant"
@@ -312,14 +235,12 @@ const ParticipantDashboard = () => {
 
       <div className="container mx-auto px-4 md:px-6 -mt-8 relative z-10">
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {/* Tab Navigation */}
           <TabNavigation 
             activeTab={activeTab}
             onTabChange={setActiveTab}
             type="participant"
           />
 
-          {/* Content */}
           {activeTab === 'events' ? (
             <EventsSection 
               events={registeredEvents}

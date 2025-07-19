@@ -1,13 +1,11 @@
-import { useState } from 'react';
-import { User, Mail, Phone, MessageSquare, GraduationCap, Building, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Mail, Phone, MessageSquare, GraduationCap, CreditCard } from 'lucide-react';
 
-const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
+const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false, initialUserData }) => {
   const [formData, setFormData] = useState({
     participantName: '',
-    registeredEmail: '',
     contactEmail: '',
     phoneNumber: '',
-    collegeOrOrganization: '',
     yearOrDesignation: '',
     expectation: '',
     agreeTerms: false
@@ -15,22 +13,25 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
 
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    if (initialUserData) {
+      setFormData(prev => ({
+        ...prev,
+        participantName: initialUserData.name || '',
+      }));
+    }
+  }, [initialUserData]);
+
   const validateForm = () => {
     const newErrors = {};
     
     if (!formData.participantName.trim()) newErrors.participantName = 'Participant name is required';
-    if (!formData.registeredEmail.trim()) {
-      newErrors.registeredEmail = 'Registered email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.registeredEmail)) {
-      newErrors.registeredEmail = 'Registered email is invalid';
-    }
     if (!formData.contactEmail.trim()) {
       newErrors.contactEmail = 'Contact email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
       newErrors.contactEmail = 'Contact email is invalid';
     }
     if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
-    if (!formData.collegeOrOrganization.trim()) newErrors.collegeOrOrganization = 'College/Organization is required';
     if (!formData.yearOrDesignation.trim()) newErrors.yearOrDesignation = 'Year/Designation is required';
     if (!formData.expectation.trim()) newErrors.expectation = 'Expectation is required';
     if (!formData.agreeTerms) newErrors.agreeTerms = 'You must agree to the terms and conditions';
@@ -46,7 +47,6 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
       [name]: type === 'checkbox' ? checked : value
     }));
 
-    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -113,29 +113,7 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
                 {errors.phoneNumber && <p className="mt-1 text-sm text-red-500">{errors.phoneNumber}</p>}
               </div>
 
-              <div>
-                <label htmlFor="registeredEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                  Registered Email <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="email"
-                    id="registeredEmail"
-                    name="registeredEmail"
-                    value={formData.registeredEmail}
-                    onChange={handleChange}
-                    className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors ${
-                      errors.registeredEmail ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="your.registered@example.com"
-                  />
-                </div>
-                {errors.registeredEmail && <p className="mt-1 text-sm text-red-500">{errors.registeredEmail}</p>}
-                <p className="mt-1 text-xs text-gray-500">This email will receive the QR code for attendance</p>
-              </div>
-
-              <div>
+              <div className="md:col-span-2">
                 <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Email <span className="text-red-500">*</span>
                 </label>
@@ -154,7 +132,7 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
                   />
                 </div>
                 {errors.contactEmail && <p className="mt-1 text-sm text-red-500">{errors.contactEmail}</p>}
-                <p className="mt-1 text-xs text-gray-500">Alternative email for communication</p>
+                <p className="mt-1 text-xs text-gray-500">Alternative email for communication. Your QR code will be sent to your registered account email.</p>
               </div>
             </div>
           </div>
@@ -167,28 +145,6 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
             <p className="text-primary-100 mt-2">Your educational and professional background</p>
           </div>
           <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="collegeOrOrganization" className="block text-sm font-medium text-gray-700 mb-2">
-                  College/Organization <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    id="collegeOrOrganization"
-                    name="collegeOrOrganization"
-                    value={formData.collegeOrOrganization}
-                    onChange={handleChange}
-                    className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors ${
-                      errors.collegeOrOrganization ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter your college or organization name"
-                  />
-                </div>
-                {errors.collegeOrOrganization && <p className="mt-1 text-sm text-red-500">{errors.collegeOrOrganization}</p>}
-              </div>
-
               <div>
                 <label htmlFor="yearOrDesignation" className="block text-sm font-medium text-gray-700 mb-2">
                   Year/Designation <span className="text-red-500">*</span>
@@ -209,7 +165,6 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false }) => {
                 </div>
                 {errors.yearOrDesignation && <p className="mt-1 text-sm text-red-500">{errors.yearOrDesignation}</p>}
               </div>
-            </div>
           </div>
         </div>
 
