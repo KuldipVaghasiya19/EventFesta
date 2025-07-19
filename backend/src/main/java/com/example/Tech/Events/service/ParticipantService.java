@@ -54,9 +54,15 @@ public class ParticipantService {
     public Participant updateParticipant(String id, Participant participantDetails) {
         return participantRepository.findById(id)
                 .map(participant -> {
-                    participant.setName(participantDetails.getName());
-                    participant.setUniversity(participantDetails.getUniversity());
-                    participant.setCourse(participantDetails.getCourse());
+                    if (participantDetails.getName() != null) {
+                        participant.setName(participantDetails.getName());
+                    }
+                    if (participantDetails.getUniversity() != null) {
+                        participant.setUniversity(participantDetails.getUniversity());
+                    }
+                    if (participantDetails.getCourse() != null) {
+                        participant.setCourse(participantDetails.getCourse());
+                    }
                     participant.setCurrentlyStudyingOrNot(participantDetails.isCurrentlyStudyingOrNot());
                     return participantRepository.save(participant);
                 })
@@ -266,29 +272,4 @@ public class ParticipantService {
 
         return participantRepository.existsById(id);
     }
-
-//    public List<Participant> findParticipantsByInterest(String interest) {
-//        if (interest == null || interest.trim().isEmpty()) {
-//            throw new IllegalArgumentException("Interest cannot be null or empty");
-//        }
-//
-//        return participantRepository.findByInterestContainingIgnoreCase(interest.trim());
-//    }
-
-//    public List<Participant> findParticipantsByInterests(List<String> interests) {
-//        if (interests == null || interests.isEmpty()) {
-//            throw new IllegalArgumentException("Interests list cannot be null or empty");
-//        }
-//
-//        List<String> cleanedInterests = interests.stream()
-//                .filter(interest -> interest != null && !interest.trim().isEmpty())
-//                .map(String::trim)
-//                .collect(Collectors.toList());
-//
-//        if (cleanedInterests.isEmpty()) {
-//            throw new IllegalArgumentException("No valid interests provided");
-//        }
-//
-//        return participantRepository.findByInterestIn(cleanedInterests);
-//    }
 }

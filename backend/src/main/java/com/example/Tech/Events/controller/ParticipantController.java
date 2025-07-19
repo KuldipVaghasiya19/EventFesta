@@ -1,7 +1,7 @@
 package com.example.Tech.Events.controller;
 
-import com.example.Tech.Events.entity.Participant;
 import com.example.Tech.Events.entity.Event;
+import com.example.Tech.Events.entity.Participant;
 import com.example.Tech.Events.service.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,17 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(
-        origins = {"http://localhost:5173", "http://localhost:8080"},
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH, RequestMethod.OPTIONS},
-        allowedHeaders = {"Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"},
-        allowCredentials = "true"
-)
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"})
 @RestController
 @RequestMapping("/api/participants")
 public class ParticipantController {
@@ -43,13 +39,12 @@ public class ParticipantController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateParticipant(
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Participant> updateParticipant(
             @PathVariable String id,
             @RequestBody Participant participantDetails) {
         try {
             Participant updatedParticipant = participantService.updateParticipant(id, participantDetails);
-            updatedParticipant.setPassword(null);
             return ResponseEntity.ok(updatedParticipant);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -67,15 +62,10 @@ public class ParticipantController {
         }
     }
 
-    // Get all registered events
     @GetMapping("/{participantId}/events")
-    public ResponseEntity<?> getRegisteredEvents(@PathVariable String participantId) {
-        try {
-            List<Event> events = participantService.getRegisteredEvents(participantId);
-            return ResponseEntity.ok(events);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<List<Event>> getRegisteredEventsForParticipant(@PathVariable String participantId) {
+        List<Event> events = participantService.getRegisteredEvents(participantId);
+        return ResponseEntity.ok(events);
     }
 
     // Change password
@@ -184,6 +174,7 @@ public class ParticipantController {
         }
     }
 
+
     // Add single interest
     @PostMapping("/{participantId}/interests")
     public ResponseEntity<Map<String, Object>> addParticipantInterest(
@@ -262,7 +253,7 @@ public class ParticipantController {
             }
 
             // URL decode the interest parameter
-            String decodedInterest = URLDecoder.decode(interest, "UTF-8");
+            String decodedInterest = URLDecoder.decode(interest, StandardCharsets.UTF_8);
 
             Participant updatedParticipant = participantService.removeParticipantInterest(participantId, decodedInterest);
 

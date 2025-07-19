@@ -57,4 +57,3 @@ public class EventRegistration {
     @JsonIgnore
     private Participant participant;
 }
-

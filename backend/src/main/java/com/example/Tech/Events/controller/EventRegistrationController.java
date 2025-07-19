@@ -3,11 +3,14 @@ package com.example.Tech.Events.controller;
 
 import com.example.Tech.Events.entity.Event;
 import com.example.Tech.Events.entity.EventRegistration;
+import com.example.Tech.Events.entity.Organization;
 import com.example.Tech.Events.entity.Participant;
 import com.example.Tech.Events.repository.EventRegistrationRepository;
 import com.example.Tech.Events.repository.EventRepository;
+import com.example.Tech.Events.repository.OrganizationRepository;
 import com.example.Tech.Events.repository.ParticipantRepository;
 import com.example.Tech.Events.service.EmailService;
+import com.example.Tech.Events.service.EventRegistrationService;
 import com.example.Tech.Events.util.QrCodeGenerator;
 import com.google.zxing.WriterException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:8080"})
@@ -35,11 +39,17 @@ public class EventRegistrationController {
     @Autowired
     private EventRepository eventRepository;
 
-    @Autowired
-    private EventRegistrationRepository eventRegistrationRepository;
+
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
 
     @PostMapping("/api/participants/{participantId}/events/{eventId}/register")
     public ResponseEntity<?> registerForEvent(
@@ -135,52 +145,66 @@ public class EventRegistrationController {
     }
 
 
-    @GetMapping("/analytics/monthly-participants")
-    public ResponseEntity<List<Map<String, Object>>> getMonthlyAnalytics() {
-        List<EventRegistration> registrations = eventRegistrationRepository.findAll();
+    @GetMapping("/{orgId}/analytics/monthly-participants")
+    public ResponseEntity<List<Map<String, Object>>> getMonthlyAnalyticsForOrganization(@PathVariable String orgId) {
+        Optional<Organization> optionalOrg = organizationRepository.findById(orgId);
+        if (optionalOrg.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        Organization organization = optionalOrg.get();
+        List<Event> events = organization.getOrganizedEvents();
+
+        if (events == null || events.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
 
         String[] MONTHS = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
         Map<Integer, Map<String, Object>> monthMap = new HashMap<>();
 
-        for (EventRegistration reg : registrations) {
-            LocalDateTime regDate = reg.getRegistrationTime(); // or event.createdAt if you prefer
-            int month = regDate.getMonthValue(); // 1 to 12
+        for (Event event : events) {
+            List<EventRegistration> registrations = event.getEventRegistrations();
+            if (registrations != null) {
+                for (EventRegistration reg : registrations) {
+                    LocalDateTime regDate = reg.getRegistrationTime();
+                    int month = regDate.getMonthValue(); // 1 to 12
 
-            Map<String, Object> monthData = monthMap.getOrDefault(month, new HashMap<>());
-            monthData.put("month", MONTHS[month - 1]);
+                    Map<String, Object> monthData = monthMap.getOrDefault(month, new HashMap<>());
+                    monthData.put("month", MONTHS[month - 1]);
 
-            int events = (int) monthData.getOrDefault("events", 0);
-            int participants = (int) monthData.getOrDefault("participants", 0);
-            int present = (int) monthData.getOrDefault("present", 0);
-            int absent = (int) monthData.getOrDefault("absent", 0);
+                    int participants = (int) monthData.getOrDefault("participants", 0);
+                    int present = (int) monthData.getOrDefault("present", 0);
+                    int absent = (int) monthData.getOrDefault("absent", 0);
 
-            monthData.put("events", events + 1); // Or calculate uniquely per event if needed
-            monthData.put("participants", participants + 1);
-            if (reg.isPresent() == true) {
-                monthData.put("present", present + 1);
-            } else {
-                monthData.put("absent", absent + 1);
+                    monthData.put("participants", participants + 1);
+                    if (reg.isPresent()) {
+                        monthData.put("present", present + 1);
+                    } else {
+                        monthData.put("absent", absent + 1);
+                    }
+
+                    monthMap.put(month, monthData);
+                }
             }
-
-            monthMap.put(month, monthData);
         }
 
-        // Ensure all 12 months are present
+        // Ensure all 12 months are present in the final result
         List<Map<String, Object>> result = new ArrayList<>();
         for (int i = 1; i <= 12; i++) {
             result.add(monthMap.getOrDefault(i, Map.of(
                     "month", MONTHS[i - 1],
-                    "events", 0,
                     "participants", 0,
                     "present", 0,
                     "absent", 0
             )));
         }
 
+        System.out.println(result);
         return ResponseEntity.ok(result);
     }
+
 
 
 }

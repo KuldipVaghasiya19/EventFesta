@@ -42,23 +42,36 @@ public class OrganizationService {
         return organizationRepository.findByNameContainingIgnoreCase(name);
     }
 
-//    public Organization updateOrganization(String id, Organization organizationDetails) {
-//        return organizationRepository.findById(id)
-//                .map(existingOrg -> {
-//                    if (organizationDetails.getName() != null) {
-//                        existingOrg.setName(organizationDetails.getName());
-//                    }
-//                    if (organizationDetails.getEmail() != null) {
-//                        existingOrg.setEmail(organizationDetails.getEmail());
-//                    }
-//                    // Never update password directly - use a separate endpoint
-//                    if (organizationDetails.getDescription() != null) {
-//                        existingOrg.setDescription(organizationDetails.getDescription());
-//                    }
-//                    return organizationRepository.save(existingOrg);
-//                })
-//                .orElseThrow(() -> new RuntimeException("Organization not found with id: " + id));
-//    }
+    public Organization updateOrganization(String id, Organization organizationDetails) {
+        return organizationRepository.findById(id)
+                .map(existingOrg -> {
+                    if (organizationDetails.getName() != null) {
+                        existingOrg.setName(organizationDetails.getName());
+                    }
+                    if (organizationDetails.getEmail() != null) {
+                        existingOrg.setEmail(organizationDetails.getEmail());
+                    }
+                    if (organizationDetails.getAbout() != null) {
+                        existingOrg.setAbout(organizationDetails.getAbout());
+                    }
+                    if (organizationDetails.getContact() != null) {
+                        existingOrg.setContact(organizationDetails.getContact());
+                    }
+                    if (organizationDetails.getLocation() != null) {
+                        existingOrg.setLocation(organizationDetails.getLocation());
+                    }
+                    if (organizationDetails.getSince() != 0) {
+                        existingOrg.setSince(organizationDetails.getSince());
+                    }
+                    if (organizationDetails.getType() != null) {
+                        existingOrg.setType(organizationDetails.getType());
+                    }
+                    // Not updating profile image here, assuming it's handled separately
+                    return organizationRepository.save(existingOrg);
+                })
+                .orElseThrow(() -> new RuntimeException("Organization not found with id: " + id));
+    }
+
 
     public void deleteOrganization(String id) {
         organizationRepository.deleteById(id);

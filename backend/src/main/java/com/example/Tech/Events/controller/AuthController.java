@@ -109,6 +109,7 @@ public class AuthController {
 
         System.out.println("🔐 Authenticating user: " + loginRequest.getEmail());
 
+        System.out.println(loginRequest.getRole());
         return ResponseEntity.ok(org);
     }
 

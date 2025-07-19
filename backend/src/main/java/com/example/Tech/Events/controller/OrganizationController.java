@@ -104,6 +104,17 @@ public class OrganizationController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Organization> updateOrganization(
+            @PathVariable String id,
+            @RequestBody Organization organizationDetails) {
+        try {
+            Organization updatedOrg = organizationService.updateOrganization(id, organizationDetails);
+            return ResponseEntity.ok(updatedOrg);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @GetMapping("/{id}/events")
     public ResponseEntity<?> getOrganizedEvents(@PathVariable String id) {
