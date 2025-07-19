@@ -1,6 +1,6 @@
 // components/OverviewTab.jsx
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, User, Mail } from 'lucide-react';
 
 const OverviewTab = ({ event }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -26,6 +26,25 @@ const OverviewTab = ({ event }) => {
           </button>
         )}
       </div>
+
+      {event.organizer && (
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Organizer</h3>
+          <div className="bg-gray-50 rounded-lg p-4 flex items-center">
+            <User className="h-5 w-5 mr-3 text-primary-500" />
+            <p className="text-gray-800 font-medium">
+              {typeof event.organizer === 'object' && event.organizer.name 
+                            ? event.organizer.name 
+                            : typeof event.organizer === 'string' 
+                            ? event.organizer 
+                            : 'Organization'}</p>
+            <Mail className="h-5 w-5 ml-auto mr-3 text-primary-500" />
+            <a href={`mailto:${event.organizer.email}`} className="text-primary-600 hover:underline">
+              {event.organizer.email}
+            </a>
+          </div>
+        </div>
+      )}
 
       {event.tags && event.tags.length > 0 && (
         <>

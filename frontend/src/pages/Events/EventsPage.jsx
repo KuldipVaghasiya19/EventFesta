@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, MapPin, Users, Search, Filter, ArrowRight, X, Building, Tag } from 'lucide-react';
+import { Calendar, MapPin, Users, Search, Filter, ArrowRight, X, Building, Tag, Star } from 'lucide-react';
 import './animations.css'; // Import the CSS file
 
 const HeroSection = () => {
@@ -57,6 +57,7 @@ const EventsPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedType, setSelectedType] = useState(searchParams.get('type') || '');
+  const [featuredOnly, setFeaturedOnly] = useState(searchParams.get('featured') === 'true');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Backend URL - replace with your actual backend endpoint
@@ -89,14 +90,30 @@ const EventsPage = () => {
     }
   };
 
-  // Color mapping for event types
+  const isRegistrationOpen = (event) => {
+    if (!event) return false;
+    const now = new Date();
+    const eventDate = new Date(event.eventDate);
+    const registrationDeadline = event.lastRegistertDate ? new Date(event.lastRegistertDate) : null;
+
+    if (now > eventDate) {
+      return false;
+    }
+    if (registrationDeadline && now > registrationDeadline) {
+      return false;
+    }
+    if (event.maxParticipants && event.currentParticipants >= event.maxParticipants) {
+      return false;
+    }
+    
+    return true;
+  };
+
  const getEventTypeColor = (type) => {
-  // Guard clause for null/undefined types, now returning your preferred default
   if (!type) {
     return 'bg-primary-500';
   }
 
-  // Your exact color mapping
   const colorMap = {
     'workshop': 'bg-blue-500',
     'seminar': 'bg-green-500',
@@ -121,8 +138,6 @@ const EventsPage = () => {
   };
 
   const normalizedType = type.toLowerCase();
-
-  // Look up the color or return the primary color as a default
   return colorMap[normalizedType] || 'bg-primary-500';
 };
 
@@ -134,8 +149,9 @@ const EventsPage = () => {
     const params = new URLSearchParams();
     if (searchTerm) params.set('search', searchTerm);
     if (selectedType) params.set('type', selectedType);
+    if (featuredOnly) params.set('featured', 'true');
     setSearchParams(params);
-  }, [searchTerm, selectedType, events]);
+  }, [searchTerm, selectedType, featuredOnly, events]);
 
   const filterEvents = () => {
     let filtered = [...events];
@@ -154,6 +170,10 @@ const EventsPage = () => {
         event.type.toLowerCase() === selectedType.toLowerCase()
       );
     }
+
+    if (featuredOnly) {
+      filtered = filtered.filter(event => isRegistrationOpen(event));
+    }
     
     setFilteredEvents(filtered);
   };
@@ -161,6 +181,7 @@ const EventsPage = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedType('');
+    setFeaturedOnly(false);
     setSearchParams({});
   };
 
@@ -241,14 +262,24 @@ const EventsPage = () => {
                   <option key={index} value={type}>{type}</option>
                 ))}
               </select>
+
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={featuredOnly}
+                  onChange={(e) => setFeaturedOnly(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-primary-600"
+                />
+                <span className="text-gray-700 dark:text-gray-300">Featured</span>
+              </label>
               
-              {(searchTerm || selectedType) && (
+              {(searchTerm || selectedType || featuredOnly) && (
                 <button
                   onClick={clearFilters}
                   className="flex items-center px-4 py-2 bg-gray-100 dark:bg-navy-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-navy-500 transition-colors"
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Clear Filters
+                  Clear
                 </button>
               )}
             </div>
@@ -271,7 +302,17 @@ const EventsPage = () => {
                   </select>
                 </div>
                 
-                {(searchTerm || selectedType) && (
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={featuredOnly}
+                    onChange={(e) => setFeaturedOnly(e.target.checked)}
+                    className="form-checkbox h-5 w-5 text-primary-600"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">Only Featured Events</span>
+                </label>
+
+                {(searchTerm || selectedType || featuredOnly) && (
                   <button
                     onClick={clearFilters}
                     className="flex items-center px-4 py-2 w-full justify-center bg-gray-100 dark:bg-navy-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-navy-500 transition-colors"
@@ -286,10 +327,11 @@ const EventsPage = () => {
         </div>
         
         {/* Filter Status Bar */}
-        {(searchTerm || selectedType) && (
+        {(searchTerm || selectedType || featuredOnly) && (
           <div className="flex items-center justify-between mb-6">
             <p className="text-gray-600 dark:text-gray-300">
               Showing {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
+              {featuredOnly && <span> (Featured)</span>}
               {selectedType && <span> of type <span className="font-medium">{selectedType}</span></span>}
               {searchTerm && <span> matching <span className="font-medium">"{searchTerm}"</span></span>}
             </p>

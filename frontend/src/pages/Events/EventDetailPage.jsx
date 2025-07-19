@@ -10,8 +10,6 @@ import EventTabs from '../../components/EventSection/EventTabs';
 
 const EventDetailPage = () => {
   const { id } = useParams();
-
-  console.log(id);
   const navigate = useNavigate();
   
   const [event, setEvent] = useState(null);
@@ -38,11 +36,13 @@ const EventDetailPage = () => {
         }
         
         const eventData = await response.json();
+
+      
         
+        // This transformation now correctly includes the organizer object
         const transformedEvent = {
           ...eventData,
           id: id,
-          backendId: eventData._id,
           date: eventData.eventDate,
           image: eventData.imageUrl,
           schedule: eventData.schedule,
@@ -52,7 +52,8 @@ const EventDetailPage = () => {
             `2nd Place: ${eventData.prizes.second}`,
             `3rd Place: ${eventData.prizes.third}`
           ] : [],
-          organizer: eventData.organizer
+          // Ensure the organizer object is passed through
+          organizer: eventData.organizer 
         };
         
         setEvent(transformedEvent);
@@ -65,7 +66,6 @@ const EventDetailPage = () => {
         setLoading(false);
       }
     };
-    
 
     fetchEvent();
   }, [id]);

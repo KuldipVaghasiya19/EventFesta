@@ -12,8 +12,9 @@ import EventRegistrationPage from './pages/Events/EventRegistrationPage';
 import ParticipantDashboard from './pages/Participant/ParticipantDashboard';
 import OrganizationDashboard from './pages/Organization/OrganizationDashboard';
 import CreateEventPage from './pages/Events/CreateEventPage';
-import ProfileUpdatePage from './pages/Organization/ProfileUpdatePage';
-import ParticipantListPage from './pages/Organization/ParticipantListPage'; // Make sure this is imported
+import OrganizationProfileUpdatePage from './pages/Organization/OrganizationProfileUpdatePage';
+import ParticipantProfileUpdatePage from './pages/Participant/ParticipantProfileUpdatePage';
+import ParticipantListPage from './pages/Organization/ParticipantListPage';
 
 function App() {
   return (
@@ -32,8 +33,9 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard/participant" element={<ParticipantDashboard />} />
           <Route path="/dashboard/organization" element={<OrganizationDashboard />} />
-          <Route path="/profile/update" element={<ProfileUpdatePage />} />
-          <Route path="/events/:eventId/participants" element={<ParticipantListPage />} /> {/* Add this route */}
+          <Route path="/dashboard/organization/profile/update" element={<OrganizationProfileUpdatePage />} />
+          <Route path="/dashboard/participant/profile/update" element={<ParticipantProfileUpdatePage />} />
+          <Route path="/events/:eventId/participants" element={<ParticipantListPage />} />
         </Routes>
       </main>
       <Footer />
