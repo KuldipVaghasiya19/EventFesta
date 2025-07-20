@@ -22,6 +22,7 @@ public class EventRegistration {
     @NonNull
     private String participantName;
 
+    // This field is deprecated and can be removed if contactEmail is used everywhere
     @NonNull
     private String registeredEmail;
 
@@ -46,6 +47,10 @@ public class EventRegistration {
     private boolean isPresent = false;
 
     private String attendanceCode;
+
+    // --- Fields for Payment Tracking ---
+    private String paymentId; // To store Razorpay's Payment ID
+    private String orderId;   // To store Razorpay's Order ID
 
     @NonNull
     @DBRef

@@ -97,6 +97,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/participants/**").hasRole("PARTICIPANT")
 
+                        .requestMatchers("/api/payment/**").hasRole("PARTICIPANT")
                         .anyRequest().authenticated()
                 );
 
