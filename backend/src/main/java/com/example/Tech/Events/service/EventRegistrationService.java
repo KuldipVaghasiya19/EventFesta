@@ -44,6 +44,11 @@ public class EventRegistrationService {
             String paymentId,
             String orderId) {
 
+        // Check for duplicate registration
+        if (eventRegistrationRepository.existsByParticipantIdAndEventId(participantId, eventId)) {
+            throw new RuntimeException("Participant is already registered for this event.");
+        }
+
         Participant participant = participantRepository.findById(participantId)
                 .orElseThrow(() -> new RuntimeException("Participant not found with ID: " + participantId));
         Event event = eventRepository.findById(eventId)

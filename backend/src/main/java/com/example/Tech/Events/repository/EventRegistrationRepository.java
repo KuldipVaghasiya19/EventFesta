@@ -16,4 +16,6 @@ public interface EventRegistrationRepository extends MongoRepository<EventRegist
     List<EventRegistration> findByEventId(String eventId);
     List<EventRegistration> findByEvent_EventDateBetween(Date start, Date end);
     List<EventRegistration> findByEventIdIn(List<String> eventIds);
+    boolean existsByParticipantIdAndEventId(String participantId, String eventId);
+
 }

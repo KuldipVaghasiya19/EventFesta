@@ -5,8 +5,8 @@ import com.example.Tech.Events.entity.Participant;
 import com.example.Tech.Events.service.ImageUploadService;
 import com.example.Tech.Events.service.OrganizationService;
 import com.example.Tech.Events.service.ParticipantService;
+import com.example.Tech.Events.service.OtpService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.mail.Message;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -33,6 +33,7 @@ public class AuthController {
     private final ParticipantService participantService;
     private final BCryptPasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final OtpService otpService;
 
     @Autowired
     private ImageUploadService imageUploadService;
@@ -40,54 +41,52 @@ public class AuthController {
     @Autowired
     public AuthController(OrganizationService organizationService,
                           ParticipantService participantService,
-                          BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+                          BCryptPasswordEncoder passwordEncoder,
+                          AuthenticationManager authenticationManager,
+                          OtpService otpService) {
         this.organizationService = organizationService;
         this.participantService = participantService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.otpService = otpService;
     }
 
     @PostMapping(value = "/register/organization", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> registerOrganization(
             @RequestPart("organization") String organizationJson,
-            @RequestPart(value = "profilePhoto", required = false) MultipartFile profilePhoto) {
-
+            @RequestPart(value = "profilePhoto", required = false) MultipartFile profilePhoto,
+            @RequestParam("otp") String otp) {
         try {
-            // Convert JSON string to Organization object
             ObjectMapper objectMapper = new ObjectMapper();
             Organization organization = objectMapper.readValue(organizationJson, Organization.class);
 
-            // Check if email already exists
+            if (!otpService.validateOtp(organization.getEmail(), otp)) {
+                return ResponseEntity.badRequest().body("Invalid OTP");
+            }
+
             if (organizationService.findByEmail(organization.getEmail()).isPresent()) {
                 return ResponseEntity.badRequest().body("Email already in use");
             }
 
-            // Upload profile photo
             if (profilePhoto != null && !profilePhoto.isEmpty()) {
                 Map<String, String> uploadResult = imageUploadService.uploadImage(profilePhoto);
                 organization.setProfileImageUrl(uploadResult.get("secure_url"));
                 organization.setProfileImagePublicId(uploadResult.get("public_id"));
             }
 
-            // Hash password if needed
             String rawPassword = organization.getPassword();
-            if (!rawPassword.startsWith("$2a$")) {
-                organization.setPassword(rawPassword);
+            if (rawPassword != null && !rawPassword.startsWith("$2a$")) {
+                organization.setPassword(passwordEncoder.encode(rawPassword));
             }
 
-
             Organization savedOrg = organizationService.createOrganization(organization);
-
             return ResponseEntity.ok(savedOrg);
-
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process request: " + e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
-
 
     @PostMapping("/login/organization")
     public ResponseEntity<?> loginOrganization(@RequestBody Organization loginRequest, HttpServletRequest httpRequest) {
@@ -107,45 +106,39 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(auth);
         httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
-        System.out.println("🔐 Authenticating user: " + loginRequest.getEmail());
-
-        System.out.println(loginRequest.getRole());
         return ResponseEntity.ok(org);
     }
-
 
     @PostMapping(value = "/register/participant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> registerParticipant(
             @RequestPart("participant") String participantJson,
-            @RequestPart(value = "profilePhoto", required = false) MultipartFile profilePhoto) {
-
+            @RequestPart(value = "profilePhoto", required = false) MultipartFile profilePhoto,
+            @RequestParam("otp") String otp) {
         try {
-            // Convert JSON string to Participant object
             ObjectMapper objectMapper = new ObjectMapper();
             Participant participant = objectMapper.readValue(participantJson, Participant.class);
 
-            // Check if email already exists
+            if (!otpService.validateOtp(participant.getEmail(), otp)) {
+                return ResponseEntity.badRequest().body("Invalid OTP");
+            }
+
             if (participantService.getParticipantByEmail(participant.getEmail()).isPresent()) {
                 return ResponseEntity.badRequest().body("Email already in use");
             }
 
-            // Upload profile photo
             if (profilePhoto != null && !profilePhoto.isEmpty()) {
                 Map<String, String> uploadResult = imageUploadService.uploadImage(profilePhoto);
                 participant.setProfileImageUrl(uploadResult.get("secure_url"));
                 participant.setProfileImagePublicId(uploadResult.get("public_id"));
             }
 
-            // Hash password if needed
             String rawPassword = participant.getPassword();
-            if (!rawPassword.startsWith("$2a$")) {
-                participant.setPassword(rawPassword); // Ideally should encode with BCrypt
+            if (rawPassword != null && !rawPassword.startsWith("$2a$")) {
+                participant.setPassword(passwordEncoder.encode(rawPassword));
             }
 
             Participant savedParticipant = participantService.createParticipant(participant);
-
             return ResponseEntity.ok(savedParticipant);
-
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process request: " + e.getMessage());
         } catch (Exception e) {
@@ -153,9 +146,8 @@ public class AuthController {
         }
     }
 
-
     @PostMapping("/login/participant")
-    public ResponseEntity<?> loginParticipant(@RequestBody Participant loginRequest,HttpServletRequest httpRequest) {
+    public ResponseEntity<?> loginParticipant(@RequestBody Participant loginRequest, HttpServletRequest httpRequest) {
         Optional<Participant> participantOpt = participantService.getParticipantByEmail(loginRequest.getEmail());
         if (participantOpt.isEmpty()) {
             return ResponseEntity.status(404).body("Participant not found");
@@ -173,7 +165,6 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(auth);
         httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
-        System.out.println("🔐 Authenticating user: " + loginRequest.getEmail());
         return ResponseEntity.ok(participant);
     }
 }

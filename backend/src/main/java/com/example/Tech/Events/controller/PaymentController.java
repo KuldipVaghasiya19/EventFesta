@@ -1,5 +1,6 @@
 package com.example.Tech.Events.controller;
 
+import com.example.Tech.Events.repository.EventRegistrationRepository;
 import com.example.Tech.Events.service.EventRegistrationService;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -33,10 +34,30 @@ public class PaymentController {
     @Autowired
     private EventRegistrationService eventRegistrationService;
 
+    // Inject the repository to check for existing registrations
+    @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
     @PostMapping("/create-order")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> data) {
         logger.info("Received /create-order request with payload: {}", data);
         try {
+            // Extract participant and event IDs from the payload
+            String participantId = (String) data.get("participantId");
+            String eventId = (String) data.get("eventId");
+
+            if (participantId == null || eventId == null) {
+                logger.error("Error: participantId or eventId is missing from the request.");
+                return ResponseEntity.badRequest().body(Map.of("error", "Participant and Event ID are required."));
+            }
+
+            // --- DUPLICATE REGISTRATION CHECK ---
+            // Check for duplicate registration before creating the payment order
+            if (eventRegistrationRepository.existsByParticipantIdAndEventId(participantId, eventId)) {
+                logger.warn("Blocking duplicate registration for participant {} in event {}", participantId, eventId);
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "You are already registered for this event."));
+            }
+
             Object amountObj = data.get("amount");
             if (Objects.isNull(amountObj)) {
                 logger.error("Error: Amount is missing from the request.");
@@ -94,6 +115,7 @@ public class PaymentController {
                 try {
                     String participantId = (String) payload.get("participantId");
                     String eventId = (String) payload.get("eventId");
+                    @SuppressWarnings("unchecked")
                     Map<String, String> registrationFormData = (Map<String, String>) payload.get("registrationData");
 
                     eventRegistrationService.registerParticipantForEvent(
@@ -106,7 +128,11 @@ public class PaymentController {
 
                     return ResponseEntity.ok(Map.of("status", "success", "message", "Payment successful and registration complete!"));
 
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
+                    // This block is now a failsafe, as the primary check is before payment.
+                    if (e.getMessage().contains("already registered")) {
+                        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("status", "failure", "message", e.getMessage()));
+                    }
                     logger.error("CRITICAL: Payment {} verified but registration failed for user {}. Reason: {}", paymentId, payload.get("participantId"), e.getMessage(), e);
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .body(Map.of(

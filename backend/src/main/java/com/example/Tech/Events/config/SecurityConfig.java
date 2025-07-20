@@ -91,6 +91,8 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/otp/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/{id}").permitAll()
 
                         .requestMatchers("/api/organizations/**").hasRole("ORGANIZATION")
@@ -98,6 +100,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/participants/**").hasRole("PARTICIPANT")
 
                         .requestMatchers("/api/payment/**").hasRole("PARTICIPANT")
+
                         .anyRequest().authenticated()
                 );
 

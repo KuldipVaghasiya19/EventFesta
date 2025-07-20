@@ -2,6 +2,7 @@ package com.example.Tech.Events.controller;
 
 import com.example.Tech.Events.entity.Event;
 import com.example.Tech.Events.entity.Participant;
+import com.example.Tech.Events.repository.EventRegistrationRepository;
 import com.example.Tech.Events.service.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,10 @@ public class ParticipantController {
     private ParticipantService participantService;
 
     @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
+
+    @Autowired
     public ParticipantController(ParticipantService participantService) {
         this.participantService = participantService;
     }
@@ -38,6 +43,12 @@ public class ParticipantController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+    @GetMapping("/{participantId}/events/{eventId}/is-registered")
+    public ResponseEntity<?> isParticipantRegistered(@PathVariable String participantId, @PathVariable String eventId) {
+        boolean isRegistered = eventRegistrationRepository.existsByParticipantIdAndEventId(participantId, eventId);
+        return ResponseEntity.ok(Map.of("isRegistered", isRegistered));
+    }
+
 
     @PutMapping("/update/{id}")
     public ResponseEntity<Participant> updateParticipant(

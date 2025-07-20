@@ -81,6 +81,7 @@ public class EmailService {
         }
     }
 
+
     /**
      * Overloaded method for backward compatibility
      */
@@ -141,6 +142,24 @@ public class EmailService {
         } catch (Exception e) {
             logger.error("Failed to send QR code email: {}", e.getMessage(), e);
             throw new Exception("Failed to send QR code email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendOtpEmail(String to, String otp) throws Exception {
+        try {
+            logger.info("Sending OTP email to: {}", to);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(to);
+            helper.setFrom(FROM_EMAIL);
+            helper.setSubject("Your OTP for EventFesta Registration");
+            String htmlContent = "<h3>Your OTP is: " + otp + "</h3>";
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            logger.info("OTP email sent successfully to: {}", to);
+        } catch (Exception e) {
+            logger.error("Failed to send OTP email: {}", e.getMessage(), e);
+            throw new Exception("Failed to send OTP email: " + e.getMessage(), e);
         }
     }
 
@@ -355,7 +374,7 @@ public class EmailService {
                 "</div>" +
                 "<div class='detail-item'>" +
                 "<h5 style='margin: 0 0 8px 0; color: #667eea;'>🏢 Organizer</h5>" +
-                "<p style='margin: 0; font-weight: bold;'>" + event.getOrganizer() + "</p>" +
+                "<p style='margin: 0; font-weight: bold;'>" + event.getOrganizer().getName() + "</p>" +
                 "</div>" +
                 "<div class='detail-item'>" +
                 "<h5 style='margin: 0 0 8px 0; color: #667eea;'>📝 Description</h5>" +

@@ -50,8 +50,11 @@ public class EventRegistrationController {
             );
 
             return ResponseEntity.ok(savedRegistration);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Error during free event registration: {}", e.getMessage(), e);
+            if (e.getMessage().contains("already registered")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Registration failed: " + e.getMessage());
         }
