@@ -18,6 +18,7 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false, initialU
       setFormData(prev => ({
         ...prev,
         participantName: initialUserData.name || '',
+        contactEmail: initialUserData.email || ''
       }));
     }
   }, [initialUserData]);
@@ -52,7 +53,8 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false, initialU
     }
   };
 
-  const handleSubmit = () => {
+  const handleFormSubmit = (e) => {
+    e.preventDefault(); // Prevent default browser form submission behavior
     if (validateForm()) {
       onSubmit(formData);
     }
@@ -61,7 +63,7 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false, initialU
   const registrationFee = event?.registrationFees || 0;
 
   return (
-    <div className="max-w-4xl mx-auto pt-24 px-4 pb-8">
+    <form onSubmit={handleFormSubmit} className="max-w-4xl mx-auto pt-24 px-4 pb-8">
       <div className="space-y-8">
         {/* Personal Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -264,8 +266,7 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false, initialU
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-8">
             <button
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
               disabled={isSubmitting}
               className="w-full flex justify-center items-center px-8 py-4 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg"
             >
@@ -291,7 +292,7 @@ const EventRegistrationForm = ({ event, onSubmit, isSubmitting = false, initialU
           </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 };
 

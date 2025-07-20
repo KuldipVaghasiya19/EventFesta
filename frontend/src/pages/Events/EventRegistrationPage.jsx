@@ -1,262 +1,246 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, AlertCircle, LogIn, ShieldOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertCircle, LogIn, ShieldOff, XCircle } from 'lucide-react';
 import EventRegistrationForm from '../../components/forms/EventRegistrationForm';
 
 const EventRegistrationPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registrationStatus, setRegistrationStatus] = useState(null);
-  const [user, setUser] = useState(null);
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [registrationStatus, setRegistrationStatus] = useState(null);
+    const [user, setUser] = useState(null);
 
-  // Check for user authentication and role
-  useEffect(() => {
-    const storedUser = localStorage.getItem('techevents_user') || sessionStorage.getItem('techevents_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        setUser(null);
-      }
-    }
-  }, []);
-
-  // Fetch event data
-  useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch(`http://localhost:8080/api/events/${id}`);
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Event not found');
-          } else {
-            setError('Failed to fetch event details');
-          }
-          return;
+    useEffect(() => {
+        const storedUser = localStorage.getItem('techevents_user') || sessionStorage.getItem('techevents_user');
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                setUser(userData);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                setUser(null);
+            }
         }
-        
-        const eventData = await response.json();
-        
-        const transformedEvent = {
-          ...eventData,
-          id: eventData.id,
-          date: eventData.eventDate,
-          image: eventData.imageUrl,
-          registrationFees: eventData.registrationFees || 0,
-          currentParticipants: eventData.currentParticipants || 0,
-          maxParticipants: eventData.maxParticipants || null,
-          lastRegistertDate: eventData.lastRegistertDate || null,
-          type: eventData.type || 'Tech Event',
-          organizer: eventData.organizer ? eventData.organizer.name : 'Event Organizer'
+    }, []);
+
+    useEffect(() => {
+        const fetchEvent = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await fetch(`http://localhost:8080/api/events/${id}`);
+                if (!response.ok) {
+                    throw new Error(response.status === 404 ? 'Event not found' : 'Failed to fetch event details');
+                }
+                const eventData = await response.json();
+                const transformedEvent = {
+                    ...eventData,
+                    id: eventData.id,
+                    date: eventData.eventDate,
+                    image: eventData.imageUrl,
+                    registrationFees: eventData.registrationFees || 0,
+                    currentParticipants: eventData.currentParticipants || 0,
+                    maxParticipants: eventData.maxParticipants || null,
+                    lastRegistertDate: eventData.lastRegistertDate || null,
+                    type: eventData.type || 'Tech Event',
+                    organizer: eventData.organizer ? eventData.organizer.name : 'Event Organizer'
+                };
+                setEvent(transformedEvent);
+                document.title = `Register for ${transformedEvent.title} - TechEvents`;
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
         };
-        
-        setEvent(transformedEvent);
-        document.title = `Register for ${transformedEvent.title} - TechEvents`;
-        
-      } catch (err) {
-        console.error('Error fetching event:', err);
-        setError('Failed to load event details');
-      } finally {
-        setLoading(false);
-      }
+        if (id) fetchEvent();
+        window.scrollTo(0, 0);
+    }, [id]);
+
+    const isRegistrationOpen = (event) => {
+        if (!event) return false;
+        const now = new Date();
+        const registrationDeadline = event.lastRegistertDate ? new Date(event.lastRegistertDate) : null;
+        const eventDate = new Date(event.date);
+        if (now > eventDate) return false;
+        if (registrationDeadline && now > registrationDeadline) return false;
+        if (event.maxParticipants && (event.currentParticipants >= event.maxParticipants)) return false;
+        return true;
     };
-
-    if (id) {
-      fetchEvent();
-    }
-    window.scrollTo(0, 0);
-  }, [id]);
-  
-  const isRegistrationOpen = (event) => {
-    if (!event) return false;
-    const now = new Date();
-    const registrationDeadline = event.lastRegistertDate ? new Date(event.lastRegistertDate) : null;
-    const eventDate = new Date(event.date);
-
-    if (now > eventDate) return false;
-    if (registrationDeadline && now > registrationDeadline) return false;
-    if (event.maxParticipants && (event.currentParticipants >= event.maxParticipants)) return false;
-
-    return true;
-  };
-
-  const handleSubmit = async (formData) => {
-    if (!user || user.role !== 'PARTICIPANT') {
-        setError("Only participants can register for events.");
-        return;
-    }
-    setIsSubmitting(true);
-    setRegistrationStatus(null);
-    try {
-      const participantId = user.id;
-      
-      const registrationData = {
-        participantName: formData.participantName,
-        contactEmail: formData.contactEmail,
-        phoneNumber: formData.phoneNumber,
-        yearOrDesignation: formData.yearOrDesignation,
-        expectation: formData.expectation,
-      };
-      
-      const response = await fetch(`http://localhost:8080/api/participants/${participantId}/events/${id}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registrationData),
-        credentials: 'include', // Include cookies in the request
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Registration failed');
-      }
-
-      const result = await response.json();
-
-      // Update user data in storage after successful registration
-      const storageKey = 'techevents_user';
-      const storedUser = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        
-        if (!Array.isArray(userData.registerdEvents)) {
-          userData.registerdEvents = [];
+    
+    const handleSubmit = async (formData) => {
+        if (!user || user.role.toLowerCase() !== 'participant') {
+            setError("Only participants can register for events.");
+            return;
         }
 
-        // Add the new event if it's not already in the list
-        if (!userData.registerdEvents.some(e => e.id === event.id)) {
-          userData.registerdEvents.push(event);
-          userData.totaleventsRegisterd = userData.registerdEvents.length;
+        setIsSubmitting(true);
+        setRegistrationStatus(null);
+        
+        const registrationFee = event?.registrationFees || 0;
+
+        // --- Flow for FREE events ---
+        if (registrationFee === 0) {
+            try {
+                const response = await fetch(`http://localhost:8080/api/participants/${user.id}/events/${id}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                    credentials: 'include',
+                });
+                if (!response.ok) throw new Error(await response.text() || 'Free registration failed.');
+                
+                setRegistrationStatus({ type: 'success', message: 'Registration Successful!', details: 'Check your email for your QR code and event details.' });
+                setTimeout(() => navigate('/dashboard/participant'), 4000);
+
+            } catch (err) {
+                setRegistrationStatus({ type: 'error', message: 'Registration Failed', details: err.message });
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
         }
 
-        // Save the updated user data back to the correct storage
-        if (localStorage.getItem(storageKey)) {
-          localStorage.setItem(storageKey, JSON.stringify(userData));
-        } else {
-          sessionStorage.setItem(storageKey, JSON.stringify(userData));
+        // --- Flow for PAID events ---
+        try {
+            const orderResponse = await fetch(`http://localhost:8080/api/payment/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: registrationFee }),
+                credentials: 'include'
+            });
+
+            if (!orderResponse.ok) {
+                const errorData = await orderResponse.json();
+                throw new Error(errorData.error || 'Failed to create payment order.');
+            }
+            
+            const orderData = await orderResponse.json();
+            
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID, 
+                amount: orderData.amount,
+                currency: "INR",
+                name: "EventFesta",
+                description: `Registration for ${event.title}`,
+                image: event.image,
+                order_id: orderData.id,
+                handler: async (response) => {
+                    try {
+                        const verificationPayload = {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            participantId: user.id,
+                            eventId: id,
+                            registrationData: formData
+                        };
+
+                        const verifyResponse = await fetch(`http://localhost:8080/api/payment/verify-and-register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(verificationPayload),
+                            credentials: 'include'
+                        });
+
+                        const result = await verifyResponse.json();
+                        
+                        if (verifyResponse.ok && result.status === 'success') {
+                            setRegistrationStatus({
+                                type: 'success',
+                                message: 'Payment & Registration Successful!',
+                                details: result.message || 'Check your email for event details.'
+                            });
+                            setTimeout(() => navigate('/dashboard/participant'), 4000);
+                        } else {
+                            throw new Error(result.message || 'Verification or final registration failed.');
+                        }
+                    } catch (err) {
+                        setRegistrationStatus({
+                            type: 'error',
+                            message: 'Post-Payment Step Failed',
+                            details: err.message || 'Please contact support with your payment details.'
+                        });
+                    }
+                },
+                prefill: { name: user.name, email: user.email },
+                theme: { color: "#3399cc" }
+            };
+            
+            const rzp1 = new window.Razorpay(options);
+            rzp1.on('payment.failed', (response) => {
+                setRegistrationStatus({
+                    type: 'error',
+                    message: 'Payment Failed!',
+                    details: response.error.description || 'Please try again.'
+                });
+                setIsSubmitting(false); // Re-enable the button on failure
+            });
+            rzp1.open();
+
+        } catch (err) {
+            setRegistrationStatus({ type: 'error', message: 'An Error Occurred', details: err.message });
+            setIsSubmitting(false);
         }
-        
-        // Update the component's user state to reflect the change immediately
-        setUser(userData);
-      }
+        // Note: isSubmitting is not set to false here for Razorpay flow, 
+        // because the Razorpay modal is now in control. It's handled in the failure/success handlers.
+    };
+    
+    if (loading) return <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    if (error && !event) return <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">Error: {error}</div>;
 
-      setRegistrationStatus({
-        type: 'success',
-        message: 'Registration successful!',
-        attendanceCode: result.attendanceCode,
-        details: 'Check your registered email for the QR code and event details.'
-      });
-      
-      setTimeout(() => {
-        navigate('/dashboard/participant', { 
-          state: { message: 'Registration successful!', eventTitle: event.title } 
-        });
-      }, 3000);
-      
-    } catch (err) {
-      setRegistrationStatus({
-        type: 'error',
-        message: err.message || 'An unexpected error occurred.'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
-  }
-
-  if (error || !event) {
-    return <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">Error: {error}</div>;
-  }
-  
-  const canRegister = isRegistrationOpen(event);
-  const isParticipant = user && user.role.toLowerCase() === 'participant';
-  const isLoggedIn = !!user;
-
-  return (
-    <div className="pt-20 pb-16 bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="mb-8">
-            <div className="flex items-center mb-4">
-                <Link to={`/events/${id}`} className="flex items-center text-gray-600 hover:text-primary-500">
-                    <ArrowLeft className="h-5 w-5 mr-1" />
-                    Back to Event Details
-                </Link>
-            </div>
-            <div className="text-center">
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">
-                    Register for <span className="text-primary-500">{event.title}</span>
-                </h1>
-            </div>
-        </div>
-        
-        <div className="max-w-2xl mx-auto">
-            {!isLoggedIn ? (
-                <div className="text-center bg-white rounded-xl shadow-sm border p-8">
-                    <LogIn className="h-12 w-12 text-primary-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Please Login to Register</h3>
-                    <p className="text-gray-600 mb-6">You must be logged in as a participant to register for this event.</p>
-                    <Link to={`/login?role=participant&redirect=/events/${id}/register`} className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg">
-                        Login as Participant
-                    </Link>
-                </div>
-            ) : !isParticipant ? (
-                <div className="text-center bg-white rounded-xl shadow-sm border p-8">
-                    <ShieldOff className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Registration Not Available</h3>
-                    <p className="text-gray-600 mb-6">Only participants can register for events. This feature is not available for organizations.</p>
-                    <Link to="/events" className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg">
-                        Browse Events
-                    </Link>
-                </div>
-            ) : !canRegister ? (
-                <div className="text-center bg-white rounded-xl shadow-sm border p-8">
-                    <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Registration Is Closed</h3>
-                    <p className="text-gray-600">We're sorry, but registration for this event is no longer available.</p>
-                </div>
-            ) : registrationStatus?.type === 'success' ? (
-                 <div className="bg-green-50 border-green-200 text-green-700 rounded-lg p-6 flex items-start">
-                    <CheckCircle className="h-6 w-6 mr-3 flex-shrink-0" />
-                    <div>
-                        <span className="font-bold text-lg">{registrationStatus.message}</span>
-                        <p className="text-sm">{registrationStatus.details}</p>
-                    </div>
-                 </div>
-            ) : (
-                <>
-                    {registrationStatus?.type === 'error' && (
-                        <div className="bg-red-50 border-red-200 text-red-700 rounded-lg p-4 mb-6 flex items-start">
-                            <AlertCircle className="h-5 w-5 mr-3 flex-shrink-0" />
-                            <div>
-                                <span className="font-bold">Registration Failed</span>
-                                <p className="text-sm">{registrationStatus.message}</p>
-                            </div>
+    if (registrationStatus) {
+        return (
+            <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center max-w-lg mx-auto">
+                    {registrationStatus.type === 'success' ? (
+                        <div className="bg-white p-10 rounded-xl shadow-lg">
+                            <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-4" />
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">{registrationStatus.message}</h2>
+                            <p className="text-gray-600">{registrationStatus.details}</p>
+                            <p className="text-gray-500 text-sm mt-4">Redirecting to your dashboard...</p>
+                        </div>
+                    ) : (
+                        <div className="bg-white p-10 rounded-xl shadow-lg">
+                            <XCircle className="h-20 w-20 text-red-500 mx-auto mb-4" />
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">{registrationStatus.message}</h2>
+                            <p className="text-gray-600 mb-6">{registrationStatus.details}</p>
+                            <button onClick={() => setRegistrationStatus(null)} className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg">Try Again</button>
                         </div>
                     )}
-                    <EventRegistrationForm
-                        event={event}
-                        onSubmit={handleSubmit}
-                        isSubmitting={isSubmitting}
-                        initialUserData={{ name: user.name, email: user.email }}
-                    />
-                </>
-            )}
+                </div>
+            </div>
+        );
+    }
+    
+    const canRegister = isRegistrationOpen(event);
+    const isParticipant = user && user.role.toLowerCase() === 'participant';
+    const isLoggedIn = !!user;
+
+    return (
+        <div className="pt-20 pb-16 bg-gray-50 min-h-screen">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="mb-8">
+                    <div className="flex items-center mb-4"><Link to={`/events/${id}`} className="flex items-center text-gray-600 hover:text-primary-500"><ArrowLeft className="h-5 w-5 mr-1" />Back to Event Details</Link></div>
+                    <div className="text-center"><h1 className="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-4">Register for <span className="text-primary-500">{event.title}</span></h1></div>
+                </div>
+                <div className="max-w-2xl mx-auto">
+                    {!isLoggedIn ? (
+                        <div className="text-center bg-white rounded-xl shadow-sm border p-8"><LogIn className="h-12 w-12 text-primary-500 mx-auto mb-4" /><h3 className="text-xl font-bold text-gray-900 mb-2">Please Login to Register</h3><p className="text-gray-600 mb-6">You must be logged in as a participant to register for this event.</p><Link to={`/login?role=participant&redirect=/events/${id}/register`} className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg">Login as Participant</Link></div>
+                    ) : !isParticipant ? (
+                        <div className="text-center bg-white rounded-xl shadow-sm border p-8"><ShieldOff className="h-12 w-12 text-red-500 mx-auto mb-4" /><h3 className="text-xl font-bold text-gray-900 mb-2">Registration Not Available</h3><p className="text-gray-600 mb-6">Only participants can register for events.</p><Link to="/events" className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg">Browse Events</Link></div>
+                    ) : !canRegister ? (
+                        <div className="text-center bg-white rounded-xl shadow-sm border p-8"><AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" /><h3 className="text-lg font-bold text-gray-900 mb-2">Registration Is Closed</h3><p className="text-gray-600">Registration for this event is no longer available.</p></div>
+                    ) : (
+                        <EventRegistrationForm event={event} onSubmit={handleSubmit} isSubmitting={isSubmitting} initialUserData={{ name: user.name, email: user.email }} />
+                    )}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default EventRegistrationPage;
