@@ -17,8 +17,8 @@ const HomePage = () => {
       <HeroSection />
       <FeaturedEvents />
       <WhyChooseUs />
-      <EventCategories />
-      <TestimonialsSection />
+      {/* <EventCategories /> */}
+      {/* <TestimonialsSection /> */}
       <CTASection />
     </div>
   );

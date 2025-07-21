@@ -60,6 +60,7 @@ const ParticipantListPage = () => {
 
   const handleDownloadPDF = () => {
     if (event && participants) {
+      console.log(event.organizer?.name);
       const organizationName = event.organizer?.name || "EventFesta";
       downloadParticipantsPDF(event, participants, organizationName);
     } else {

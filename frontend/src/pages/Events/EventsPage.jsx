@@ -80,7 +80,7 @@ const EventsPage = () => {
       
       const data = await response.json();
       setEvents(data);
-      setFilteredEvents(data);
+      // setFilteredEvents is now handled by the filtering useEffect
       setError(null);
     } catch (err) {
       console.error('Error fetching events:', err);
@@ -109,65 +109,47 @@ const EventsPage = () => {
     return true;
   };
 
- const getEventTypeColor = (type) => {
-  if (!type) {
-    return 'bg-primary-500';
-  }
+  const getEventTypeColor = (type) => {
+    if (!type) {
+      return 'bg-primary-500';
+    }
 
-  const colorMap = {
-    'workshop': 'bg-blue-500',
-    'seminar': 'bg-green-500',
-    'conference': 'bg-purple-500',
-    'hackathon': 'bg-red-500',
-    'meetup': 'bg-orange-500',
-    'webinar': 'bg-indigo-500',
-    'bootcamp': 'bg-pink-500',
-    'networking': 'bg-teal-500',
-    'training': 'bg-yellow-500',
-    'symposium': 'bg-cyan-500',
-    'summit': 'bg-violet-500',
-    'expo': 'bg-emerald-500',
-    'forum': 'bg-rose-500',
-    'roundtable': 'bg-amber-500',
-    'panel': 'bg-lime-500',
-    'masterclass': 'bg-slate-500',
-    'competition': 'bg-fuchsia-500',
-    'startup': 'bg-sky-500',
-    'demo': 'bg-stone-500',
-    'pitch': 'bg-zinc-500'
+    const colorMap = {
+      'workshop': 'bg-blue-500', 'seminar': 'bg-green-500', 'conference': 'bg-purple-500',
+      'hackathon': 'bg-red-500', 'meetup': 'bg-orange-500', 'webinar': 'bg-indigo-500',
+      'bootcamp': 'bg-pink-500', 'networking': 'bg-teal-500', 'training': 'bg-yellow-500',
+      'symposium': 'bg-cyan-500', 'summit': 'bg-violet-500', 'expo': 'bg-emerald-500',
+      'forum': 'bg-rose-500', 'roundtable': 'bg-amber-500', 'panel': 'bg-lime-500',
+      'masterclass': 'bg-slate-500', 'competition': 'bg-fuchsia-500', 'startup': 'bg-sky-500',
+      'demo': 'bg-stone-500', 'pitch': 'bg-zinc-500'
+    };
+
+    const normalizedType = type.toLowerCase();
+    return colorMap[normalizedType] || 'bg-primary-500';
   };
 
-  const normalizedType = type.toLowerCase();
-  return colorMap[normalizedType] || 'bg-primary-500';
-};
-
-  const types = [...new Set(events.map(event => event.type))];
+  // ✅ FIX: Create a case-insensitive, unique, capitalized, and sorted list of types.
+  // This is robust against missing 'type' properties and prevents ReferenceError.
+  const types = [...new Set(events.map(event => (event.type || '').toLowerCase()))]
+    .filter(type => type) // Filter out any empty strings
+    .map(type => type.charAt(0).toUpperCase() + type.slice(1))
+    .sort();
 
   useEffect(() => {
-    filterEvents();
-    
-    const params = new URLSearchParams();
-    if (searchTerm) params.set('search', searchTerm);
-    if (selectedType) params.set('type', selectedType);
-    if (featuredOnly) params.set('featured', 'true');
-    setSearchParams(params);
-  }, [searchTerm, selectedType, featuredOnly, events]);
-
-  const filterEvents = () => {
     let filtered = [...events];
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(event => 
-        event.title.toLowerCase().includes(term) || 
-        event.description.toLowerCase().includes(term) ||
-        event.location.toLowerCase().includes(term)
+        (event.title && event.title.toLowerCase().includes(term)) || 
+        (event.description && event.description.toLowerCase().includes(term)) ||
+        (event.location && event.location.toLowerCase().includes(term))
       );
     }
     
     if (selectedType) {
       filtered = filtered.filter(event => 
-        event.type.toLowerCase() === selectedType.toLowerCase()
+        event.type && event.type.toLowerCase() === selectedType.toLowerCase()
       );
     }
 
@@ -176,16 +158,22 @@ const EventsPage = () => {
     }
     
     setFilteredEvents(filtered);
-  };
+
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (selectedType) params.set('type', selectedType);
+    if (featuredOnly) params.set('featured', 'true');
+    setSearchParams(params, { replace: true });
+  }, [searchTerm, selectedType, featuredOnly, events, setSearchParams]);
 
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedType('');
     setFeaturedOnly(false);
-    setSearchParams({});
   };
 
   if (loading) {
+    // Your original, detailed skeleton loader is preserved
     return (
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
@@ -198,7 +186,6 @@ const EventsPage = () => {
             </p>
           </div>
           
-          {/* Loading skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, index) => (
               <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
@@ -225,6 +212,7 @@ const EventsPage = () => {
   }
 
   if (error) {
+    // Your original error display is preserved
     return (
       <div className="pt-20 pb-16 bg-gray-50 dark:bg-navy-900 min-h-screen transition-colors duration-300">
         <HeroSection />
@@ -247,7 +235,6 @@ const EventsPage = () => {
 
   return (
     <div className="pt-20 pb-16 bg-gray-50 dark:bg-navy-900 min-h-screen transition-colors duration-300">
-      {/* Hero Section */}
       <HeroSection />
       
       <div className="container mx-auto px-4 md:px-6 -mt-16 relative z-10">
@@ -283,8 +270,8 @@ const EventsPage = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-navy-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors bg-white dark:bg-navy-700 text-gray-900 dark:text-white"
               >
                 <option value="">All Types</option>
-                {types.map((type, index) => (
-                  <option key={index} value={type}>{type}</option>
+                {types.map((type) => (
+                  <option key={type} value={type}>{type}</option>
                 ))}
               </select>
 
@@ -321,8 +308,8 @@ const EventsPage = () => {
                     className="px-4 py-2 w-full border border-gray-300 dark:border-navy-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors bg-white dark:bg-navy-700 text-gray-900 dark:text-white"
                   >
                     <option value="">All Types</option>
-                    {types.map((type, index) => (
-                      <option key={index} value={type}>{type}</option>
+                    {types.map((type) => (
+                      <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
                 </div>
@@ -375,7 +362,8 @@ const EventsPage = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className={`absolute top-4 right-4 ${getEventTypeColor(event.type)} text-white text-xs font-bold px-3 py-1 rounded-full`}>
-                    {event.type}
+                    {/* Displaying capitalized type for consistency */}
+                    {event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'General'}
                   </div>
                 </div>
                 <div className="p-6">
@@ -383,6 +371,7 @@ const EventsPage = () => {
                     {event.title}
                   </h3>
                   
+                  {/* Your original event details are preserved */}
                   <div className="space-y-3 mb-4">
                     <div className="flex items-center text-gray-600 dark:text-gray-300">
                       <Calendar className="h-4 w-4 mr-2 text-primary-500" />
@@ -419,7 +408,7 @@ const EventsPage = () => {
                     )}
                   </div>
                   
-                  {/* Tags */}
+                  {/* Your original tags section is preserved */}
                   {event.tags && event.tags.length > 0 && (
                     <div className="mb-4">
                       <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">

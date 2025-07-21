@@ -12,11 +12,43 @@ const SignupPage = () => {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
+
 
   useEffect(() => {
     window.scrollTo(0, 0);
     document.title = `Sign Up as ${role.charAt(0).toUpperCase() + role.slice(1)} - EventFesta`;
   }, [role]);
+
+  const handleSendOtp = async (email) => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setOtpMessage('Please enter a valid email address.');
+        return false;
+    }
+    setOtpMessage('Sending OTP...');
+    try {
+        const response = await fetch('http://localhost:8080/api/otp/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setOtpMessage(data.message || 'OTP sent successfully!');
+            return true;
+        } else {
+            setOtpMessage(data.message || 'Failed to send OTP.');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error sending OTP:', error);
+        setOtpMessage('Network error. Could not send OTP.');
+        return false;
+    }
+  };
+
 
   const handleSubmit = async (formData) => {
     setIsSubmitting(true);
@@ -31,14 +63,14 @@ const SignupPage = () => {
         apiFormData.append('profilePhoto', formData.profilePhoto);
       }
       
-      // Remove profilePhoto from formData before JSON stringifying
-      const { profilePhoto, ...dataWithoutPhoto } = formData;
+      // Remove profilePhoto and otp from formData before JSON stringifying
+      const { profilePhoto, otp, ...dataWithoutExtras } = formData;
       
       // Add JSON data to FormData
-      apiFormData.append(role, JSON.stringify(dataWithoutPhoto));
+      apiFormData.append(role, JSON.stringify(dataWithoutExtras));
       
       // Make API call
-      const response = await fetch(`http://localhost:8080/api/auth/register/${role}`, {
+      const response = await fetch(`http://localhost:8080/api/auth/register/${role}?otp=${otp}`, {
         method: 'POST',
         body: apiFormData
       });
@@ -130,14 +162,18 @@ const SignupPage = () => {
               {role === 'organization' ? (
                 <OrganizationSignup 
                   onSubmit={handleSubmit} 
+                  onSendOtp={handleSendOtp}
                   isSubmitting={isSubmitting} 
                   submitError={submitError}
+                  otpMessage={otpMessage}
                 />
               ) : (
                 <ParticipantSignup 
                   onSubmit={handleSubmit} 
+                  onSendOtp={handleSendOtp}
                   isSubmitting={isSubmitting} 
                   submitError={submitError}
+                  otpMessage={otpMessage}
                 />
               )}
               

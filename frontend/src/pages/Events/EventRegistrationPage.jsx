@@ -3,6 +3,20 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, AlertCircle, LogIn, ShieldOff, XCircle } from 'lucide-react';
 import EventRegistrationForm from '../../components/forms/EventRegistrationForm';
 
+const AlreadyRegisteredPage = ({ event }) => (
+    <div className="text-center bg-white rounded-xl shadow-sm border p-8">
+        <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-gray-900 mb-2">You are already registered!</h3>
+        <p className="text-gray-600 mb-6">
+            You have already registered for <strong>{event.title}</strong>. You can view your event details in your dashboard.
+        </p>
+        <Link to="/dashboard/participant" className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg">
+            Go to Dashboard
+        </Link>
+    </div>
+);
+
+
 const EventRegistrationPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -12,6 +26,8 @@ const EventRegistrationPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [registrationStatus, setRegistrationStatus] = useState(null);
     const [user, setUser] = useState(null);
+    const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+
 
     useEffect(() => {
         const storedUser = localStorage.getItem('techevents_user') || sessionStorage.getItem('techevents_user');
@@ -27,15 +43,18 @@ const EventRegistrationPage = () => {
     }, []);
 
     useEffect(() => {
-        const fetchEvent = async () => {
+        const fetchEventAndCheckRegistration = async () => {
+            if (!id) return;
             try {
                 setLoading(true);
                 setError(null);
-                const response = await fetch(`http://localhost:8080/api/events/${id}`);
-                if (!response.ok) {
-                    throw new Error(response.status === 404 ? 'Event not found' : 'Failed to fetch event details');
+
+                // Fetch event details
+                const eventResponse = await fetch(`http://localhost:8080/api/events/${id}`);
+                if (!eventResponse.ok) {
+                    throw new Error(eventResponse.status === 404 ? 'Event not found' : 'Failed to fetch event details');
                 }
-                const eventData = await response.json();
+                const eventData = await eventResponse.json();
                 const transformedEvent = {
                     ...eventData,
                     id: eventData.id,
@@ -49,16 +68,26 @@ const EventRegistrationPage = () => {
                     organizer: eventData.organizer ? eventData.organizer.name : 'Event Organizer'
                 };
                 setEvent(transformedEvent);
-                document.title = `Register for ${transformedEvent.title} - TechEvents`;
+                document.title = `Register for ${transformedEvent.title} - EventFesta`;
+
+                // Check registration status if user is logged in
+                if (user) {
+                    const regResponse = await fetch(`http://localhost:8080/api/participants/${user.id}/events/${id}/is-registered`);
+                    if (regResponse.ok) {
+                        const { isRegistered } = await regResponse.json();
+                        setIsAlreadyRegistered(isRegistered);
+                    }
+                }
             } catch (err) {
                 setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
-        if (id) fetchEvent();
+
+        fetchEventAndCheckRegistration();
         window.scrollTo(0, 0);
-    }, [id]);
+    }, [id, user]);
 
     const isRegistrationOpen = (event) => {
         if (!event) return false;
@@ -106,14 +135,20 @@ const EventRegistrationPage = () => {
 
         // --- Flow for PAID events ---
         try {
+            // Create the order, now sending participant and event IDs for pre-check
             const orderResponse = await fetch(`http://localhost:8080/api/payment/create-order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: registrationFee }),
+                body: JSON.stringify({
+                    amount: registrationFee,
+                    participantId: user.id, // Send participantId for the check
+                    eventId: id             // Send eventId for the check
+                }),
                 credentials: 'include'
             });
 
             if (!orderResponse.ok) {
+                // This will now catch the 409 Conflict error from the backend
                 const errorData = await orderResponse.json();
                 throw new Error(errorData.error || 'Failed to create payment order.');
             }
@@ -185,14 +220,14 @@ const EventRegistrationPage = () => {
             setRegistrationStatus({ type: 'error', message: 'An Error Occurred', details: err.message });
             setIsSubmitting(false);
         }
-        // Note: isSubmitting is not set to false here for Razorpay flow, 
-        // because the Razorpay modal is now in control. It's handled in the failure/success handlers.
     };
     
     if (loading) return <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
     if (error && !event) return <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">Error: {error}</div>;
 
     if (registrationStatus) {
+        const isDuplicateError = registrationStatus.details && registrationStatus.details.toLowerCase().includes('already registered');
+        
         return (
             <div className="pt-20 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center max-w-lg mx-auto">
@@ -206,9 +241,27 @@ const EventRegistrationPage = () => {
                     ) : (
                         <div className="bg-white p-10 rounded-xl shadow-lg">
                             <XCircle className="h-20 w-20 text-red-500 mx-auto mb-4" />
-                            <h2 className="text-3xl font-bold text-gray-800 mb-2">{registrationStatus.message}</h2>
-                            <p className="text-gray-600 mb-6">{registrationStatus.details}</p>
-                            <button onClick={() => setRegistrationStatus(null)} className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg">Try Again</button>
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                                {isDuplicateError ? 'Already Registered' : registrationStatus.message}
+                            </h2>
+                            <p className="text-gray-600 mb-6">
+                                {isDuplicateError ? 'You can only register for an event once.' : registrationStatus.details}
+                            </p>
+                            {isDuplicateError ? (
+                                <button 
+                                    onClick={() => navigate('/events')} 
+                                    className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg"
+                                >
+                                    Explore Other Events
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => setRegistrationStatus(null)} 
+                                    className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg"
+                                >
+                                    Try Again
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -232,6 +285,8 @@ const EventRegistrationPage = () => {
                         <div className="text-center bg-white rounded-xl shadow-sm border p-8"><LogIn className="h-12 w-12 text-primary-500 mx-auto mb-4" /><h3 className="text-xl font-bold text-gray-900 mb-2">Please Login to Register</h3><p className="text-gray-600 mb-6">You must be logged in as a participant to register for this event.</p><Link to={`/login?role=participant&redirect=/events/${id}/register`} className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg">Login as Participant</Link></div>
                     ) : !isParticipant ? (
                         <div className="text-center bg-white rounded-xl shadow-sm border p-8"><ShieldOff className="h-12 w-12 text-red-500 mx-auto mb-4" /><h3 className="text-xl font-bold text-gray-900 mb-2">Registration Not Available</h3><p className="text-gray-600 mb-6">Only participants can register for events.</p><Link to="/events" className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg">Browse Events</Link></div>
+                    ) : isAlreadyRegistered ? (
+                        <AlreadyRegisteredPage event={event} />
                     ) : !canRegister ? (
                         <div className="text-center bg-white rounded-xl shadow-sm border p-8"><AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" /><h3 className="text-lg font-bold text-gray-900 mb-2">Registration Is Closed</h3><p className="text-gray-600">Registration for this event is no longer available.</p></div>
                     ) : (

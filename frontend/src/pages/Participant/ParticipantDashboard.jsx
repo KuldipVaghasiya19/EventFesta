@@ -52,6 +52,7 @@ const ParticipantDashboard = () => {
           profileImagePublicId: userData.profileImagePublicId
         };
 
+        console.log(transformedUser);
         setUser(transformedUser);
         
         // --- FIX: Always fetch fresh data from the server on load ---

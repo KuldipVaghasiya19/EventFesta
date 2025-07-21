@@ -127,9 +127,9 @@ const LoginPage = () => {
 
         // Navigate to the correct dashboard after successful login
         if (userData.role === 'ORGANIZATION') {
-          navigate('/dashboard/organization', { replace: true });
+          navigate('/dashboard/organization', { state: { userData }, replace: true });
         } else if (userData.role === 'PARTICIPANT') {
-          navigate('/dashboard/participant', { replace: true });
+          navigate('/dashboard/participant', { state: { userData }, replace: true });
         } else {
           // Fallback navigation in case role is not standard
           navigate('/', { replace: true });
