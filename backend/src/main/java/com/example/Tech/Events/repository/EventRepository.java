@@ -8,10 +8,6 @@ import java.util.Date;
 import java.util.List;
 
 public interface EventRepository extends MongoRepository<Event, String> {
-    List<Event> findByOrganizerId(String organizerId);
-    List<Event> findByTagsIn(List<String> tags);
-    List<Event> findByEventDateAfter(Date date);
-    List<Event> findByEventDateBefore(Date date);
     Event findByTitle(String title);
     List<Event> findByEventDateBetween(Date start, Date end);
 }

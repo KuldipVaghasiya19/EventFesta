@@ -7,6 +7,7 @@ import com.example.Tech.Events.repository.ParticipantRepository;
 import com.example.Tech.Events.service.EmailService;
 import com.example.Tech.Events.service.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,10 +44,7 @@ public class EventController {
         }
     }
 
-    /**
-     * Get all events
-     * @return List of all events
-     */
+//    @Cacheable(value = "allEvents")
     @GetMapping
     public ResponseEntity<List<Event>> getAllEvents() {
         try {
@@ -57,11 +55,6 @@ public class EventController {
         }
     }
 
-    /**
-     * Get event by ID
-     * @param id Event ID
-     * @return Event if found, 404 if not found
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Event> getEventById(@PathVariable String id) {
         try {
@@ -75,26 +68,4 @@ public class EventController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    /**
-     * Delete event by ID
-     * @param id Event ID to delete
-     * @return 204 No Content if successful
-     */
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<Void> deleteEvent(@PathVariable String id) {
-//        try {
-//            boolean deleted = eventService.deleteEvent(id);
-//            if (deleted) {
-//                return ResponseEntity.noContent().build();
-//            } else {
-//                return ResponseEntity.notFound().build();
-//            }
-//        } catch (IOException e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
-//
-
-
 }

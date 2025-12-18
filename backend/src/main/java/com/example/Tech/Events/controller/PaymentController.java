@@ -126,6 +126,8 @@ public class PaymentController {
                             orderId
                     );
 
+
+
                     return ResponseEntity.ok(Map.of("status", "success", "message", "Payment successful and registration complete!"));
 
                 } catch (RuntimeException e) {

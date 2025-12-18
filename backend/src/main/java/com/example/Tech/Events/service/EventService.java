@@ -11,14 +11,20 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class EventService {
 
+    @Autowired
     private final EventRepository eventRepository;
+
+    @Autowired
     private final ImageUploadService cloudinaryService;
+
     @Autowired
     private EmailService emailService;
+
     @Autowired
     private ParticipantRepository participantRepository;
 
@@ -28,6 +34,7 @@ public class EventService {
         this.cloudinaryService = cloudinaryService;
     }
 
+
     public Event createEvent(Event event) throws Exception {
         Event savedEvent = eventRepository.save(event);
 
@@ -35,7 +42,10 @@ public class EventService {
         List<String> eventTags = event.getTags();
         if (eventTags == null || eventTags.isEmpty()) return savedEvent;
 
-        Set<String> eventTagSet = new HashSet<>(eventTags);
+        // Convert event tags to a lowercase set for case-insensitive comparison
+        Set<String> lowerCaseEventTagSet = eventTags.stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
 
         List<Participant> allParticipants = participantRepository.findAll();
 
@@ -43,20 +53,21 @@ public class EventService {
             List<String> participantTags = participant.getInterest();
             if (participantTags == null || participantTags.isEmpty()) continue;
 
-            Set<String> participantTagSet = new HashSet<>(participantTags);
-            Set<String> matchedTags = new HashSet<>(participantTagSet);
-            matchedTags.retainAll(eventTagSet);
+            // Find the original participant tags that have a case-insensitive match
+            Set<String> matchedTags = participantTags.stream()
+                    .filter(tag -> lowerCaseEventTagSet.contains(tag.toLowerCase()))
+                    .collect(Collectors.toSet());
+
 
             System.out.println("Matched Tags for " + participant.getName() + ": " + matchedTags);
             System.out.println("Saved Event Tags: " + savedEvent.getTags());
 
             if (!matchedTags.isEmpty()) {
-                // Send email with matched tags
                 emailService.sendTagMatchEmail(
                         participant.getEmail(),
                         participant.getName(),
                         event,
-                        matchedTags // Pass the matched tags
+                        matchedTags
                 );
             }
         }
@@ -76,13 +87,6 @@ public class EventService {
         return eventRepository.findById(id).orElse(null);
     }
 
-//    public void deleteEvent(String id) throws IOException {
-//        Event event = eventRepository.findById(id).orElse(null);
-//        if (event != null && event.getImagePublicId() != null) {
-//            imageu.deleteImage(event.getImagePublicId());
-//        }
-//        eventRepository.deleteById(id);
-//    }
 
     public boolean registerParticipant(String eventId, EventRegistration registration) {
         Event event = eventRepository.findById(eventId).orElse(null);

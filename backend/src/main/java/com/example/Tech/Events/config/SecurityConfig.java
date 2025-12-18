@@ -35,7 +35,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // Re-injecting UserDetailsService to build the AuthenticationManager
     private final CustomUserDetailsService customUserDetailsService;
 
     @Bean
@@ -92,15 +91,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/otp/**").permitAll()
-
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/{id}").permitAll()
-
                         .requestMatchers("/api/organizations/**").hasRole("ORGANIZATION")
-
                         .requestMatchers("/api/participants/**").hasRole("PARTICIPANT")
-
                         .requestMatchers("/api/payment/**").hasRole("PARTICIPANT")
-
                         .anyRequest().authenticated()
                 );
 

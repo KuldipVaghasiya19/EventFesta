@@ -21,8 +21,7 @@ public class OrganizationService {
     private EmailService emailService;
 
     public Organization createOrganization(Organization organization) throws Exception {
-        organization.setPassword(passwordEncoder.encode(organization.getPassword()));
-
+        // The password is now encoded in the controller, so we don't need to encode it again here.
         Organization savedOrganization = organizationRepository.save(organization);
         emailService.sendRegistrationEmail(savedOrganization.getEmail(),savedOrganization.getName());
 

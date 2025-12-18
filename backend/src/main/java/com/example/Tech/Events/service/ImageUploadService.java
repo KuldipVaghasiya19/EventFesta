@@ -15,7 +15,6 @@ public class ImageUploadService {
     @Autowired
     private Cloudinary cloudinary;
 
-    // Upload image and return full result Map from Cloudinary
     public Map<String, String> uploadImage(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap("resource_type", "auto"));

@@ -22,7 +22,6 @@ public class EventRegistration {
     @NonNull
     private String participantName;
 
-    // This field is deprecated and can be removed if contactEmail is used everywhere
     @NonNull
     private String registeredEmail;
 
@@ -31,11 +30,6 @@ public class EventRegistration {
 
     @NonNull
     private String phoneNumber;
-
-    @NonNull
-    @DBRef
-    @JsonIgnore
-    private Organization collegeOrOrganization;
 
     @NonNull
     private String yearOrDesignation;
@@ -48,9 +42,9 @@ public class EventRegistration {
 
     private String attendanceCode;
 
-    // --- Fields for Payment Tracking ---
-    private String paymentId; // To store Razorpay's Payment ID
-    private String orderId;   // To store Razorpay's Order ID
+    private String paymentId;
+
+    private String orderId;
 
     @NonNull
     @DBRef
@@ -61,4 +55,10 @@ public class EventRegistration {
     @DBRef
     @JsonIgnore
     private Participant participant;
+
+    @NonNull
+    @DBRef
+    @JsonIgnore
+    private Organization collegeOrOrganization;
+
 }

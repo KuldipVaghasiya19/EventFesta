@@ -43,11 +43,12 @@ public class Participant {
 
     private int totaleventsRegisterd;
 
+    private List<String> interest;
+
+    private String role = "PARTICIPANT";
+
     @JsonIgnore
     @DBRef
     private List<Event> registerdEvents;
 
-    private List<String> interest;
-
-    private String role = "PARTICIPANT";
 }

@@ -16,13 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,6 +29,7 @@ public class OrganizationController {
 
     @Autowired
     private OrganizationService organizationService;
+
     @Autowired
     private EventService eventService;
 
@@ -60,14 +57,9 @@ public class OrganizationController {
             @RequestPart("event") String eventJson,
             @RequestPart("image") MultipartFile imageFile) {
 
-
         try {
-            // Convert event JSON string to Event object
-//            ObjectMapper objectMapper = new ObjectMapper();
-            System.out.println(eventJson);
             Event event = objectMapper.readValue(eventJson, Event.class);
-            System.out.println(event.getRemainingSeats());
-            // Find organization
+
             Optional<Organization> optionalOrg = organizationRepository.findById(id);
             if (optionalOrg.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Organization not found");
@@ -76,15 +68,12 @@ public class OrganizationController {
             Organization organization = optionalOrg.get();
             event.setOrganizer(organization);
 
-            // Upload image to Cloudinary
             Map uploadResult = cloudinary.uploader().upload(imageFile.getBytes(), Map.of());
             String imageUrl = uploadResult.get("secure_url").toString();
-            event.setImageUrl(imageUrl); // assuming you have an `imageUrl` field
+            event.setImageUrl(imageUrl);
 
-            // Save event
             Event savedEvent = eventService.createEvent(event);
 
-            // Update organization
             if (organization.getOrganizedEvents() == null) {
                 organization.setOrganizedEvents(new ArrayList<>());
             }
@@ -170,9 +159,8 @@ public class OrganizationController {
 
     @GetMapping("/events/{eventId}/participants")
     public ResponseEntity<?> getParticipantsByEventId(@PathVariable String eventId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("🔍 Principal: " + authentication.getPrincipal());
-        System.out.println("🔍 Authorities: " + authentication.getAuthorities());
+
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         Optional<Event> eventOpt = eventRepository.findById(eventId);
         if (eventOpt.isEmpty()) {
@@ -183,8 +171,6 @@ public class OrganizationController {
         List<EventRegistration> registrations = event.getEventRegistrations();
 
         if (registrations == null || registrations.isEmpty()) {
-            // To provide the event details even if there are no participants,
-            // we create a map with the event and an empty participant list.
             Map<String, Object> response = new HashMap<>();
             response.put("event", event);
             response.put("participants", Collections.emptyList());
@@ -199,21 +185,20 @@ public class OrganizationController {
             details.put("id", p.getId());
             details.put("name", p.getName());
             details.put("email", p.getEmail());
-            details.put("phone", reg.getPhoneNumber()); // Get phone number from registration
+            details.put("phone", reg.getPhoneNumber());
             details.put("location", p.getUniversity());
             details.put("profileImageUrl", p.getProfileImageUrl());
-            details.put("isPresent", reg.isPresent()); // Add attendance status
+            details.put("isPresent", reg.isPresent());
             return details;
         }).collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("event", event);
         response.put("participants", participantDetails);
-        System.out.println("REsponse"+response);
+        System.out.println("REsponse" + response);
 
         return ResponseEntity.ok(response);
     }
-
 
 
     @PostMapping
@@ -237,18 +222,6 @@ public class OrganizationController {
     public List<Organization> searchOrganizations(@RequestParam String name) {
         return organizationService.searchOrganizationsByName(name);
     }
-
-//    @PutMapping("/{id}")
-//    public ResponseEntity<Organization> updateOrganization(
-//            @PathVariable String id,
-//            @RequestBody Organization organizationDetails) {
-//        try {
-//            Organization updatedOrg = organizationService.updateOrganization(id, organizationDetails);
-//            return ResponseEntity.ok(updatedOrg);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.notFound().build();
-//        }
-//    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteOrganization(@PathVariable String id) {

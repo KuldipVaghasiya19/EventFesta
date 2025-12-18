@@ -134,6 +134,7 @@ public class AuthController {
 
             String rawPassword = participant.getPassword();
             if (rawPassword != null && !rawPassword.startsWith("$2a$")) {
+                System.out.println(passwordEncoder.encode(rawPassword));
                 participant.setPassword(passwordEncoder.encode(rawPassword));
             }
 
@@ -147,24 +148,28 @@ public class AuthController {
     }
 
     @PostMapping("/login/participant")
-    public ResponseEntity<?> loginParticipant(@RequestBody Participant loginRequest, HttpServletRequest httpRequest) {
-        Optional<Participant> participantOpt = participantService.getParticipantByEmail(loginRequest.getEmail());
+    public ResponseEntity<?> loginParticipant(@RequestBody Map<String, String> loginRequest, HttpServletRequest httpRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
+
+        Optional<Participant> participantOpt = participantService.getParticipantByEmail(email);
         if (participantOpt.isEmpty()) {
             return ResponseEntity.status(404).body("Participant not found");
         }
 
         Participant participant = participantOpt.get();
-        if (!passwordEncoder.matches(loginRequest.getPassword(), participant.getPassword())) {
+
+        System.out.println("Participant stored Password :" + participant.getPassword());
+        System.out.println(passwordEncoder.matches(password, participant.getPassword()));
+        if (!passwordEncoder.matches(password, participant.getPassword())) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
-
+        System.out.println(email + " " + password);
         Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+                new UsernamePasswordAuthenticationToken(email, password)
         );
-
         SecurityContextHolder.getContext().setAuthentication(auth);
         httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
-
         return ResponseEntity.ok(participant);
     }
 }

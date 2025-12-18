@@ -27,13 +27,6 @@ public class ParticipantController {
     @Autowired
     private EventRegistrationRepository eventRegistrationRepository;
 
-
-    @Autowired
-    public ParticipantController(ParticipantService participantService) {
-        this.participantService = participantService;
-    }
-
-    // Get participant by ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getParticipant(@PathVariable String id) {
         return participantService.getParticipantById(id)
@@ -49,7 +42,6 @@ public class ParticipantController {
         return ResponseEntity.ok(Map.of("isRegistered", isRegistered));
     }
 
-
     @PutMapping("/update/{id}")
     public ResponseEntity<Participant> updateParticipant(
             @PathVariable String id,
@@ -62,7 +54,6 @@ public class ParticipantController {
         }
     }
 
-    // Delete participant
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteParticipant(@PathVariable String id) {
         try {
@@ -79,7 +70,6 @@ public class ParticipantController {
         return ResponseEntity.ok(events);
     }
 
-    // Change password
     @PatchMapping("/{id}/change-password")
     public ResponseEntity<?> changePassword(
             @PathVariable String id,
@@ -93,11 +83,9 @@ public class ParticipantController {
         }
     }
 
-    // Get participant interests
     @GetMapping("/{participantId}/interests")
     public ResponseEntity<?> getParticipantInterests(@PathVariable String participantId) {
         try {
-            // Validate participant ID
             if (participantId == null || participantId.trim().isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid participant ID");
@@ -107,7 +95,6 @@ public class ParticipantController {
 
             List<String> interests = participantService.getParticipantInterests(participantId);
 
-            // Check if participant exists (service returns null when participant not found)
             if (interests == null) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Participant not found");
@@ -124,13 +111,11 @@ public class ParticipantController {
         }
     }
 
-    // Update participant interests (replace all)
     @PutMapping("/{participantId}/interests")
     public ResponseEntity<Map<String, Object>> updateParticipantInterests(
             @PathVariable String participantId,
             @RequestBody Map<String, Object> requestBody) {
         try {
-            // Validate participant ID
             if (participantId == null || participantId.trim().isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid participant ID");
@@ -138,7 +123,6 @@ public class ParticipantController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
             }
 
-            // Extract tags from request body with proper type checking
             List<String> tags = new ArrayList<>();
             Object tagsObj = requestBody.get("tags");
 
@@ -153,7 +137,7 @@ public class ParticipantController {
                     }
                 }
             } else if (tagsObj == null) {
-                tags = new ArrayList<>(); // Empty list for null tags
+                tags = new ArrayList<>();
             } else {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid request format");
@@ -163,7 +147,6 @@ public class ParticipantController {
 
             Participant updatedParticipant = participantService.updateParticipantInterests(participantId, tags);
 
-            // Check if participant exists (service returns null when participant not found)
             if (updatedParticipant == null) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Participant not found");
@@ -186,13 +169,11 @@ public class ParticipantController {
     }
 
 
-    // Add single interest
     @PostMapping("/{participantId}/interests")
     public ResponseEntity<Map<String, Object>> addParticipantInterest(
             @PathVariable String participantId,
             @RequestBody Map<String, Object> requestBody) {
         try {
-            // Validate participant ID
             if (participantId == null || participantId.trim().isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid participant ID");
@@ -219,7 +200,6 @@ public class ParticipantController {
 
             Participant updatedParticipant = participantService.addParticipantInterest(participantId, interest);
 
-            // Check if participant exists (service returns null when participant not found)
             if (updatedParticipant == null) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Participant not found");
@@ -241,13 +221,11 @@ public class ParticipantController {
         }
     }
 
-    // Remove single interest
     @DeleteMapping("/{participantId}/interests/{interest}")
     public ResponseEntity<Map<String, Object>> removeParticipantInterest(
             @PathVariable String participantId,
             @PathVariable String interest) {
         try {
-            // Validate participant ID
             if (participantId == null || participantId.trim().isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid participant ID");
@@ -255,7 +233,6 @@ public class ParticipantController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
             }
 
-            // Validate interest
             if (interest == null || interest.trim().isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid interest");
@@ -263,12 +240,10 @@ public class ParticipantController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
             }
 
-            // URL decode the interest parameter
             String decodedInterest = URLDecoder.decode(interest, StandardCharsets.UTF_8);
 
             Participant updatedParticipant = participantService.removeParticipantInterest(participantId, decodedInterest);
 
-            // Check if participant exists (service returns null when participant not found)
             if (updatedParticipant == null) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Participant not found");

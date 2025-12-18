@@ -44,7 +44,6 @@ public class EventRegistrationService {
             String paymentId,
             String orderId) {
 
-        // Check for duplicate registration
         if (eventRegistrationRepository.existsByParticipantIdAndEventId(participantId, eventId)) {
             throw new RuntimeException("Participant is already registered for this event.");
         }
@@ -54,7 +53,6 @@ public class EventRegistrationService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found with ID: " + eventId));
 
-        // Build the registration object from the form data and fetched entities
         EventRegistration newRegistration = EventRegistration.builder()
                 .participant(participant)
                 .event(event)
@@ -67,17 +65,17 @@ public class EventRegistrationService {
                 .expectation(registrationFormData.get("expectation"))
                 .attendanceCode(UUID.randomUUID().toString().substring(0, 6).toUpperCase())
                 .isPresent(false)
-                .paymentId(paymentId) // Will be null for free events
-                .orderId(orderId)     // Will be null for free events
+                .paymentId(paymentId)
+                .orderId(orderId)
                 .build();
 
         EventRegistration savedRegistration = eventRegistrationRepository.save(newRegistration);
-        logger.info("Registration saved with ID: {}", savedRegistration.getId());
 
         if (event.getEventRegistrations() == null) {
             event.setEventRegistrations(new ArrayList<>());
         }
         event.getEventRegistrations().add(savedRegistration);
+        event.setCurrentParticipants(event.getCurrentParticipants()+1);
         eventRepository.save(event);
 
         if (participant.getRegisterdEvents() == null) {
@@ -85,6 +83,9 @@ public class EventRegistrationService {
         }
         participant.getRegisterdEvents().add(event);
         participantRepository.save(participant);
+        System.out.println(event.getCurrentParticipants());
+
+        System.out.println(event.getCurrentParticipants());
 
         try {
             BufferedImage qrImage = QrCodeGenerator.generateQRCodeImage(savedRegistration.getAttendanceCode());
@@ -94,8 +95,6 @@ public class EventRegistrationService {
                 logger.info("QR code email sent successfully to {}", emailAddress);
             }
         } catch (WriterException e) {
-            logger.error("Registration successful but failed to generate or send QR code email: {}", e.getMessage(), e);
-            // Do not throw an error here, the registration itself was successful
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

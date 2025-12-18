@@ -27,46 +27,38 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    /**
-     * Sends a beautiful registration welcome email
-     */
+
     public void sendRegistrationEmail(String to, String name) throws Exception {
         try {
-            logger.info("Sending registration email to: {}", to);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
             helper.setFrom(FROM_EMAIL);
-            helper.setBcc(ADMIN_EMAIL); // Add BCC for admin monitoring
+            helper.setBcc(ADMIN_EMAIL);
             helper.setSubject("🎉 Welcome to EventFesta - Registration Successful!");
 
             String htmlContent = buildRegistrationEmailContent(name);
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            logger.info("Registration email sent successfully to: {}", to);
 
         } catch (Exception e) {
-            logger.error("Failed to send registration email: {}", e.getMessage(), e);
             throw new Exception("Failed to send registration email: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Sends a beautiful event match notification email with matched tags
-     */
+
     public void sendTagMatchEmail(String toEmail, String participantName, Event event, Set<String> matchedTags) throws Exception {
         try {
-            logger.info("Sending tag match email to: {} with matched tags: {}", toEmail, matchedTags);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
             helper.setFrom(FROM_EMAIL);
-            helper.setBcc(ADMIN_EMAIL); // Add BCC for admin monitoring
+            helper.setBcc(ADMIN_EMAIL);
             helper.setSubject("🎯 Perfect Match Found: " + event.getTitle() + " - Just for You!");
 
             String htmlContent = buildTagMatchEmailContent(participantName, event, matchedTags);
@@ -81,17 +73,10 @@ public class EmailService {
         }
     }
 
-
-    /**
-     * Overloaded method for backward compatibility
-     */
     public void sendTagMatchEmail(String toEmail, String participantName, Event event) throws Exception {
         sendTagMatchEmail(toEmail, participantName, event, null);
     }
 
-    /**
-     * Sends QR code with event details via email
-     */
     public void sendQRWithEventDetails(String toEmail, String participantName, Event event, BufferedImage qrImage)
             throws Exception {
 
@@ -104,9 +89,7 @@ public class EmailService {
         }
 
         try {
-            logger.info("Converting QR image to base64 for email: {}", toEmail);
 
-            // Convert BufferedImage to byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             boolean writeSuccess = ImageIO.write(qrImage, "png", baos);
 
@@ -123,24 +106,19 @@ public class EmailService {
 
             helper.setTo(toEmail);
             helper.setFrom(FROM_EMAIL);
-            helper.setBcc(ADMIN_EMAIL); // Add BCC for admin monitoring
+            helper.setBcc(ADMIN_EMAIL);
             helper.setSubject("🎫 Your Event Ticket & QR Code - " + event.getTitle());
 
             String htmlContent = buildQREmailContent(participantName, event, base64Image);
             helper.setText(htmlContent, true);
 
-            // Attach the QR code as a file
             helper.addAttachment("event-qr-code.png", new ByteArrayResource(imageBytes));
 
-            logger.info("Sending QR code email");
             mailSender.send(message);
-            logger.info("QR code email sent successfully to: {}", toEmail);
 
         } catch (IOException e) {
-            logger.error("Failed to process QR image: {}", e.getMessage(), e);
             throw new Exception("Failed to process QR code image: " + e.getMessage(), e);
         } catch (Exception e) {
-            logger.error("Failed to send QR code email: {}", e.getMessage(), e);
             throw new Exception("Failed to send QR code email: " + e.getMessage(), e);
         }
     }
@@ -163,9 +141,6 @@ public class EmailService {
         }
     }
 
-    /**
-     * Builds HTML content for registration email
-     */
     private String buildRegistrationEmailContent(String name) {
         return "<!DOCTYPE html>" +
                 "<html>" +
@@ -221,11 +196,7 @@ public class EmailService {
                 "</html>";
     }
 
-    /**
-     * Builds HTML content for tag match email with matched tags
-     */
     private String buildTagMatchEmailContent(String participantName, Event event, Set<String> matchedTags) {
-        // Build matched tags HTML
         String matchedTagsHtml = "";
         if (matchedTags != null && !matchedTags.isEmpty()) {
             StringBuilder tagsBuilder = new StringBuilder();
@@ -313,9 +284,6 @@ public class EmailService {
                 "</html>";
     }
 
-    /**
-     * Builds HTML content for QR code email
-     */
     private String buildQREmailContent(String participantName, Event event, String base64Image) {
         return "<!DOCTYPE html>" +
                 "<html>" +
@@ -404,9 +372,6 @@ public class EmailService {
                 "</html>";
     }
 
-    /**
-     * Common CSS styles for all emails
-     */
     private String getCommonEmailStyles() {
         return "body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; }" +
                 ".container { max-width: 650px; margin: 0 auto; background-color: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }" +
@@ -428,9 +393,6 @@ public class EmailService {
                 "}";
     }
 
-    /**
-     * Generates a random ticket ID for display purposes
-     */
     private String generateTicketId() {
         return "TKT-" + System.currentTimeMillis() % 100000;
     }

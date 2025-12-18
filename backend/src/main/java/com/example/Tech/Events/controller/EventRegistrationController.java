@@ -27,26 +27,20 @@ public class EventRegistrationController {
     @Autowired
     private OrganizationRepository organizationRepository;
 
-    /**
-     * Handles the registration for FREE events.
-     * Paid event registrations are handled by the PaymentController.
-     * This now accepts form data as a Map to align with the service layer.
-     */
     @PostMapping("/api/participants/{participantId}/events/{eventId}/register")
     public ResponseEntity<?> registerForFreeEvent(
             @PathVariable String participantId,
             @PathVariable String eventId,
-            @RequestBody Map<String, String> registrationFormData) { // Correctly accepts a Map
+            @RequestBody Map<String, String> registrationFormData) {
         try {
             logger.info("Received request for free registration for event: {} by participant: {}", eventId, participantId);
 
-            // This call now matches the service method signature, fixing the error.
             EventRegistration savedRegistration = eventRegistrationService.registerParticipantForEvent(
                     participantId,
                     eventId,
                     registrationFormData,
-                    null, // No Payment ID for free events
-                    null  // No Order ID for free events
+                    null,
+                    null
             );
 
             return ResponseEntity.ok(savedRegistration);
@@ -60,9 +54,6 @@ public class EventRegistrationController {
         }
     }
 
-    /**
-     * Provides monthly participation analytics for a given organization.
-     */
     @GetMapping("/{orgId}/analytics/monthly-participants")
     public ResponseEntity<List<Map<String, Object>>> getMonthlyAnalyticsForOrganization(@PathVariable String orgId) {
         Optional<Organization> optionalOrg = organizationRepository.findById(orgId);
@@ -77,8 +68,7 @@ public class EventRegistrationController {
             return ResponseEntity.ok(Collections.emptyList());
         }
 
-        String[] MONTHS = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        String[] MONTHS = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
         Map<Integer, Map<String, Object>> monthMap = new HashMap<>();
 
@@ -87,7 +77,7 @@ public class EventRegistrationController {
             if (registrations != null) {
                 for (EventRegistration reg : registrations) {
                     LocalDateTime regDate = reg.getRegistrationTime();
-                    int month = regDate.getMonthValue(); // 1 to 12
+                    int month = regDate.getMonthValue();
 
                     Map<String, Object> monthData = monthMap.getOrDefault(month, new HashMap<>());
                     monthData.put("month", MONTHS[month - 1]);

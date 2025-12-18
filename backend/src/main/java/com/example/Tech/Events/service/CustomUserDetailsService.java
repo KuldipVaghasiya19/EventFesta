@@ -30,7 +30,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         List<GrantedAuthority> authorities = new ArrayList<>();
-        // First, try to find an Organization with the given email
         Optional<Organization> organization = organizationRepository.findByEmail(email);
         if (organization.isPresent()) {
             Organization org = organization.get();
@@ -38,7 +37,6 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new User(org.getEmail(), org.getPassword(), authorities);
         }
 
-        // If no Organization is found, try to find a Participant
         Optional<Participant> participant = participantRepository.findByEmail(email);
         if (participant.isPresent()) {
             Participant part = participant.get();
@@ -46,7 +44,6 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new User(part.getEmail(), part.getPassword(), authorities);
         }
 
-        // If neither is found, throw an exception
         throw new UsernameNotFoundException("User not found with email: " + email);
     }
 }

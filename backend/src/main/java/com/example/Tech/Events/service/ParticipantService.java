@@ -28,8 +28,7 @@ public class ParticipantService {
     }
 
     public Participant createParticipant(Participant participant) throws Exception {
-        String hashedPassword = passwordEncoder.encode(participant.getPassword());
-        participant.setPassword(hashedPassword);
+        // The password is now encoded in the controller, so we don't need to encode it again here.
         participant.setTotaleventsRegisterd(0);
         participant.setCurrentlyStudyingOrNot(true);
 
