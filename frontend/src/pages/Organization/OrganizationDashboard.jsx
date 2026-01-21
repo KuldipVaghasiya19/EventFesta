@@ -98,7 +98,7 @@ const OrganizationDashboard = () => {
               name: userData.name,
               avatar: userData.profileImageUrl
             }
-          }));
+          })).sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
           
           setOrganizationEvents(transformedEvents);
         } else {

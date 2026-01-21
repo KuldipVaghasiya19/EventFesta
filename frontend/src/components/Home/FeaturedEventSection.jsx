@@ -67,7 +67,7 @@ const FeaturedEvents = () => {
           
           {/* Loading skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, index) => (
+            {[...Array(3)].map((_, index) => (
               <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
                 <div className="h-48 bg-gray-300"></div>
                 <div className="p-6">

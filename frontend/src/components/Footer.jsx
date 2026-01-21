@@ -12,7 +12,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center mb-4">
               <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">TE</span>
+                <span className="text-white font-bold text-lg">EF</span>
               </div>
               <span className="ml-2 text-xl font-display font-bold text-white">
                 EventFesta
@@ -125,7 +125,7 @@ const Footer = () => {
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-2 text-primary-400 flex-shrink-0" />
                 <a href="mailto:info@techevents.com" className="text-gray-300 dark:text-gray-400 hover:text-primary-400 transition-colors">
-                  info@techevents.com
+                  info@eventfesta.com
                 </a>
               </li>
             </ul>

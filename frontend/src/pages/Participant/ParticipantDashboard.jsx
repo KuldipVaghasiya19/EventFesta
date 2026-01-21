@@ -126,7 +126,7 @@ const ParticipantDashboard = () => {
             name: event.organizerName,
             avatar: event.organizerAvatar
           }
-        }));
+        })).sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
         
         setRegisteredEvents(transformedEvents);
         

@@ -156,10 +156,10 @@ const LoginPage = () => {
                 <Link to="/" className="inline-block">
                   <div className="flex items-center justify-center">
                     <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">TE</span>
+                      <span className="text-white font-bold text-lg">EF</span>
                     </div>
                     <span className="ml-2 text-2xl font-display font-bold text-primary-700">
-                      TechEvents
+                      EventFesta
                     </span>
                   </div>
                 </Link>

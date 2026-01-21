@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, UserPlus, Upload, Mail, MapPin, Building, Briefcase, Phone } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Eye, EyeOff, UserPlus, Upload, Mail, MapPin, Building, Briefcase, Phone, ShieldCheck } from 'lucide-react';
 
 // Reusable Input Component
 const InputField = ({ 
@@ -62,7 +63,11 @@ const PasswordField = ({
   </div>
 );
 
-const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
+const OrganizationSignup = () => {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -77,6 +82,10 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
     agreeTerms: false
   });
   
+  // New State for OTP
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -87,6 +96,26 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
     { value: 'CORPORATE', label: 'Corporate/Company' },
     { value: 'OTHER', label: 'Other' }
   ];
+
+  // OTP Logic matching Backend OtpController
+  const sendOtp = async () => {
+    if (!formData.email || errors.email) {
+      setErrors(prev => ({ ...prev, email: 'Please enter a valid email first' }));
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      // Backend expects @RequestBody Map<String, String>
+      await axios.post('http://localhost:8080/api/otp/send', { email: formData.email });
+      setOtpSent(true);
+      setSubmitError('');
+      alert('OTP sent to ' + formData.email);
+    } catch (err) {
+      setSubmitError(err.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -115,6 +144,11 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
     if (!formData.agreeTerms) {
       newErrors.agreeTerms = 'You must agree to the terms and conditions';
     }
+
+    // OTP Validation
+    if (otpSent && !otp.trim()) {
+      newErrors.otp = 'OTP is required';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -132,9 +166,17 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
     }
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!otpSent) {
+      setSubmitError('Please click "Get OTP" and verify your email first.');
+      return;
+    }
+
     if (validateForm()) {
+      setIsSubmitting(true);
+      
       const organizationData = {
         name: formData.name,
         email: formData.email,
@@ -143,10 +185,27 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
         location: formData.location,
         since: parseInt(formData.since),
         about: formData.about,
-        contact: formData.contact,
-        profilePhoto: formData.profilePhoto
+        contact: formData.contact
       };
-      onSubmit(organizationData);
+
+      const data = new FormData();
+      data.append('organization', JSON.stringify(organizationData));
+      if (formData.profilePhoto) {
+        data.append('profilePhoto', formData.profilePhoto);
+      }
+
+      try {
+        // Appending OTP as query param to match Backend AuthController
+        await axios.post(`http://localhost:8080/api/auth/register/organization?otp=${otp}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        navigate('/login');
+      } catch (err) {
+        console.error(err);
+        setSubmitError(err.response?.data || 'Registration failed');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -177,17 +236,34 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Email Address"
-                icon={Mail}
-                required
-                value={formData.email}
-                onChange={handleChange}
-                error={errors.email}
-              />
+              {/* Email with OTP Button */}
+              <div className="relative">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                   Email Address <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                   <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input 
+                         type="email" 
+                         name="email" 
+                         value={formData.email} 
+                         onChange={handleChange}
+                         className={`pl-10 pr-4 py-3 w-full border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                         placeholder="Email Address"
+                      />
+                   </div>
+                   <button 
+                      type="button" 
+                      onClick={sendOtp}
+                      disabled={isSubmitting || otpSent}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 font-medium whitespace-nowrap"
+                   >
+                      Get OTP
+                   </button>
+                </div>
+                {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+              </div>
 
               <InputField
                 id="location"
@@ -200,6 +276,20 @@ const OrganizationSignup = ({ onSubmit, isSubmitting, submitError }) => {
                 error={errors.location}
               />
             </div>
+            
+            {/* OTP Input Field - Only Visible after sending */}
+            {otpSent && (
+               <InputField
+                 id="otp"
+                 name="otp"
+                 placeholder="Enter 6-Digit OTP"
+                 icon={ShieldCheck}
+                 required
+                 value={otp}
+                 onChange={(e) => setOtp(e.target.value)}
+                 error={errors.otp}
+               />
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
