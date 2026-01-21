@@ -8,6 +8,7 @@ import com.example.Tech.Events.service.ParticipantService;
 import com.example.Tech.Events.service.OtpService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -74,39 +75,36 @@ public class AuthController {
                 organization.setProfileImagePublicId(uploadResult.get("public_id"));
             }
 
-            String rawPassword = organization.getPassword();
-            if (rawPassword != null && !rawPassword.startsWith("$2a$")) {
-                organization.setPassword(passwordEncoder.encode(rawPassword));
-            }
+            // Encode password strictly
+            organization.setPassword(passwordEncoder.encode(organization.getPassword()));
 
             Organization savedOrg = organizationService.createOrganization(organization);
             return ResponseEntity.ok(savedOrg);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process request: " + e.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return ResponseEntity.status(500).body("Registration Error: " + e.getMessage());
         }
     }
 
     @PostMapping("/login/organization")
-    public ResponseEntity<?> loginOrganization(@RequestBody Organization loginRequest, HttpServletRequest httpRequest) {
-        Optional<Organization> orgOptional = organizationService.findByEmail(loginRequest.getEmail());
-        if (orgOptional.isEmpty()) {
-            return ResponseEntity.status(404).body("Organization not found");
-        }
+    public ResponseEntity<?> loginOrganization(@RequestBody Map<String, String> loginRequest, HttpServletRequest httpRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
 
-        Organization org = orgOptional.get();
-        if (!passwordEncoder.matches(loginRequest.getPassword(), org.getPassword())) {
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
+
+            return ResponseEntity.ok(organizationService.findByEmail(email).get());
+        } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(auth);
-        httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
-
-        return ResponseEntity.ok(org);
     }
 
     @PostMapping(value = "/register/participant", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -132,44 +130,34 @@ public class AuthController {
                 participant.setProfileImagePublicId(uploadResult.get("public_id"));
             }
 
-            String rawPassword = participant.getPassword();
-            if (rawPassword != null && !rawPassword.startsWith("$2a$")) {
-                System.out.println(passwordEncoder.encode(rawPassword));
-                participant.setPassword(passwordEncoder.encode(rawPassword));
-            }
+            participant.setPassword(passwordEncoder.encode(participant.getPassword()));
 
             Participant savedParticipant = participantService.createParticipant(participant);
             return ResponseEntity.ok(savedParticipant);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process request: " + e.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return ResponseEntity.status(500).body("Registration Error: " + e.getMessage());
         }
     }
 
     @PostMapping("/login/participant")
     public ResponseEntity<?> loginParticipant(@RequestBody Map<String, String> loginRequest, HttpServletRequest httpRequest) {
-        String email = loginRequest.get("email");
-        String password = loginRequest.get("password");
+        try {
+            String email = loginRequest.get("email");
+            String password = loginRequest.get("password");
 
-        Optional<Participant> participantOpt = participantService.getParticipantByEmail(email);
-        if (participantOpt.isEmpty()) {
-            return ResponseEntity.status(404).body("Participant not found");
-        }
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
 
-        Participant participant = participantOpt.get();
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
-        System.out.println("Participant stored Password :" + participant.getPassword());
-        System.out.println(passwordEncoder.matches(password, participant.getPassword()));
-        if (!passwordEncoder.matches(password, participant.getPassword())) {
+            return ResponseEntity.ok(participantService.getParticipantByEmail(email).get());
+        } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
-        System.out.println(email + " " + password);
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
-        SecurityContextHolder.getContext().setAuthentication(auth);
-        httpRequest.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
-        return ResponseEntity.ok(participant);
     }
 }

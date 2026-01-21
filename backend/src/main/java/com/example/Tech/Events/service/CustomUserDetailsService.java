@@ -13,9 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLOutput;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 import java.util.Optional;
 
 @Service
@@ -29,19 +27,26 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        Optional<Organization> organization = organizationRepository.findByEmail(email);
-        if (organization.isPresent()) {
-            Organization org = organization.get();
-            authorities.add(new SimpleGrantedAuthority("ROLE_ORGANIZATION"));
-            return new User(org.getEmail(), org.getPassword(), authorities);
+        // Check if user is Organization
+        Optional<Organization> org = organizationRepository.findByEmail(email);
+        if (org.isPresent()) {
+            return new User(
+                    org.get().getEmail(),
+                    org.get().getPassword(),
+                    // MUST have ROLE_ prefix for hasRole() to work
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_ORGANIZATION"))
+            );
         }
 
+        // Check if user is Participant
         Optional<Participant> participant = participantRepository.findByEmail(email);
         if (participant.isPresent()) {
-            Participant part = participant.get();
-            authorities.add(new SimpleGrantedAuthority("ROLE_PARTICIPANT"));
-            return new User(part.getEmail(), part.getPassword(), authorities);
+            return new User(
+                    participant.get().getEmail(),
+                    participant.get().getPassword(),
+                    // MUST have ROLE_ prefix for hasRole() to work
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTICIPANT"))
+            );
         }
 
         throw new UsernameNotFoundException("User not found with email: " + email);

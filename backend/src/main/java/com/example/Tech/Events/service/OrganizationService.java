@@ -15,17 +15,15 @@ public class OrganizationService {
     private OrganizationRepository organizationRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // For hashing passwords
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private EmailService emailService;
 
     public Organization createOrganization(Organization organization) throws Exception {
-        // The password is now encoded in the controller, so we don't need to encode it again here.
+        // Password is now encoded in AuthController to ensure consistency with OTP flow.
         Organization savedOrganization = organizationRepository.save(organization);
-        emailService.sendRegistrationEmail(savedOrganization.getEmail(),savedOrganization.getName());
-
-        System.out.println(savedOrganization);
+        emailService.sendRegistrationEmail(savedOrganization.getEmail(), savedOrganization.getName());
         return savedOrganization;
     }
 
@@ -65,12 +63,10 @@ public class OrganizationService {
                     if (organizationDetails.getType() != null) {
                         existingOrg.setType(organizationDetails.getType());
                     }
-                    // Not updating profile image here, assuming it's handled separately
                     return organizationRepository.save(existingOrg);
                 })
                 .orElseThrow(() -> new RuntimeException("Organization not found with id: " + id));
     }
-
 
     public void deleteOrganization(String id) {
         organizationRepository.deleteById(id);
