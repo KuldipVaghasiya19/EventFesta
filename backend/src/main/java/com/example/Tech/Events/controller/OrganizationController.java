@@ -160,7 +160,7 @@ public class OrganizationController {
     @GetMapping("/events/{eventId}/participants")
     public ResponseEntity<?> getParticipantsByEventId(@PathVariable String eventId) {
 
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    //  Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         Optional<Event> eventOpt = eventRepository.findById(eventId);
         if (eventOpt.isEmpty()) {
@@ -229,40 +229,72 @@ public class OrganizationController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/api/attendance/verify")
+    @PostMapping("/attendance/verify")
     public ResponseEntity<?> verifyAttendanceCode(@RequestBody Map<String, String> request) {
         String code = request.get("attendanceCode");
-        Optional<EventRegistration> optionalReg = eventRegistrationRepository.findByAttendanceCode(code);
 
-        if (optionalReg.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid attendance code");
+        // 1. Validate Input
+        if (code == null || code.trim().isEmpty()) {
+            // FIX: Return JSON error so frontend doesn't crash
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Attendance code is required"));
         }
 
+        // 2. Lookup Registration
+        Optional<EventRegistration> optionalReg = eventRegistrationRepository.findByAttendanceCode(code);
+
+        // 3. Handle Invalid Code
+        if (optionalReg.isEmpty()) {
+            // FIX: Return JSON error instead of plain string
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Invalid attendance code"));
+        }
+
+        // 4. Success Logic
         EventRegistration registration = optionalReg.get();
 
         Map<String, Object> response = new HashMap<>();
-        response.put("participantName", registration.getParticipantName());
         response.put("registeredEmail", registration.getRegisteredEmail());
+        response.put("participantName", registration.getParticipantName());
         response.put("isPresent", registration.isPresent());
+
+        // Extra details for validation on frontend
+        if (registration.getEvent() != null) {
+            response.put("eventName", registration.getEvent().getTitle());
+            response.put("eventId", registration.getEvent().getId());
+        }
 
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/api/attendance/mark")
+    @PostMapping("/attendance/mark")
     public ResponseEntity<?> markAttendance(@RequestBody Map<String, Object> request) {
         String code = (String) request.get("attendanceCode");
-        boolean isPresent = (boolean) request.get("isPresent");
+        Boolean isPresent = (Boolean) request.get("isPresent"); // Supports true or false
+
+        if (code == null || isPresent == null) {
+            return ResponseEntity.badRequest().body("Attendance Code and status (isPresent) are required");
+        }
 
         Optional<EventRegistration> optionalReg = eventRegistrationRepository.findByAttendanceCode(code);
+
         if (optionalReg.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid attendance code");
         }
 
         EventRegistration registration = optionalReg.get();
+
+        // Update the status
         registration.setPresent(isPresent);
+
+        // Save to database
         eventRegistrationRepository.save(registration);
 
-        return ResponseEntity.ok("Attendance status updated");
+        return ResponseEntity.ok(Map.of(
+                "message", "Attendance marked successfully",
+                "participantName", registration.getParticipantName(),
+                "newStatus", isPresent ? "Present" : "Absent"
+        ));
     }
 
     @GetMapping("/api/events/{eventId}/attendance-summary")
