@@ -1,428 +1,297 @@
-import { useState, useRef, useEffect } from 'react';
-import { QrCode, Camera, Users, Check, X, Calendar } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { QrCode, Users, Check, X, AlertCircle, RefreshCw } from 'lucide-react';
 
 const AttendanceSection = ({ events }) => {
   const [selectedEvent, setSelectedEvent] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
   const [scannedResult, setScannedResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [attendanceStats, setAttendanceStats] = useState({
-    totalScanned: 0,
-    presentCount: 0,
-    absentCount: 0
-  });
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const scannerRef = useRef(null);
 
-  const startScanning = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setIsScanning(true);
-      }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
-    }
-  };
+  // API Base URL
+  const API_BASE_URL = "http://localhost:8080/api/organizations/attendance";
 
-  const stopScanning = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setIsScanning(false);
-  };
+  // --- Backend Integration ---
 
-  const simulateQRScan = () => {
-    // Simulate scanning a QR code with random data
-    const mockQRCodes = [
-      'QR_REG001_JOHN_DOE',
-      'QR_REG002_SARAH_JOHNSON', 
-      'QR_REG003_MICHAEL_CHEN',
-      'QR_REG004_EMILY_DAVIS',
-      'QR_REG005_DAVID_WILSON'
-    ];
-    
-    const randomCode = mockQRCodes[Math.floor(Math.random() * mockQRCodes.length)];
-    handleQRCodeScanned(randomCode);
-  };
-
-  const handleQRCodeScanned = async (qrCode) => {
-    if (!selectedEvent) {
-      alert('Please select an event first!');
-      return;
-    }
-
+  const verifyCode = async (qrCode) => {
+    console.log("Verifying Code:", qrCode);
     setIsProcessing(true);
-    
+
     try {
-      // Simulate API call to backend to get participant info
-      const response = await getParticipantInfo(qrCode, selectedEvent);
-      
-      // Display the participant info without marking attendance yet
-      setScannedResult({
-        ...response,
-        qrCode: qrCode,
-        attendanceMarked: false
+      // 1. Fetch Data
+      const response = await fetch(`${API_BASE_URL}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendanceCode: qrCode }),
+        credentials: 'include' // Sends JSESSIONID cookie
       });
 
+      // 2. Safe JSON Parsing
+      const contentType = response.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { message: text || "Unknown error occurred" };
+      }
+
+      console.log("Backend Response:", data);
+
+      // 3. Handle Success/Error
+      if (response.ok) {
+        // Validation: Check if ticket belongs to selected event
+        if (data.eventId && data.eventId !== selectedEvent) {
+           setScannedResult({
+            success: false,
+            message: `Wrong Event! Ticket is for: ${data.eventName || 'Unknown Event'}`,
+            qrCode: qrCode
+          });
+        } else {
+          // SUCCESS: Set data to state
+          setScannedResult({
+            success: true,
+            participantName: data.participantName,
+            participantEmail: data.registeredEmail,
+            currentStatus: data.isPresent,
+            message: 'Participant Found!',
+            qrCode: qrCode,
+            attendanceMarked: false
+          });
+        }
+        
+        // STOP SCANNER immediately on success so Result UI can take over
+        if (scannerRef.current) {
+          scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
+        }
+
+      } else {
+        // FAIL: Show error message
+        setScannedResult({
+          success: false,
+          message: data.message || 'Invalid QR Code',
+          qrCode: qrCode
+        });
+        
+        // Stop scanner on error too, so user sees the error message clearly
+        if (scannerRef.current) {
+          scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
+        }
+      }
+
     } catch (error) {
-      console.error('Error processing QR code:', error);
+      console.error("Network Error:", error);
       setScannedResult({
         success: false,
-        message: 'Error processing QR code. Please try again.',
-        participantName: null,
-        qrCode: qrCode,
-        attendanceMarked: false
+        message: 'Network error. Is backend running?',
+        qrCode: qrCode
       });
+      if (scannerRef.current) {
+         scannerRef.current.clear().catch(e => console.error(e));
+      }
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const getParticipantInfo = async (qrCode, eventId) => {
-    // Simulate backend API call to get participant info
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock response from backend
-        const mockParticipants = {
-          'QR_REG001_JOHN_DOE': { name: 'John Doe', email: 'john.doe@example.com' },
-          'QR_REG002_SARAH_JOHNSON': { name: 'Sarah Johnson', email: 'sarah.j@example.com' },
-          'QR_REG003_MICHAEL_CHEN': { name: 'Michael Chen', email: 'michael.chen@example.com' },
-          'QR_REG004_EMILY_DAVIS': { name: 'Emily Davis', email: 'emily.davis@example.com' },
-          'QR_REG005_DAVID_WILSON': { name: 'David Wilson', email: 'david.w@example.com' }
-        };
-
-        const participant = mockParticipants[qrCode];
-        
-        if (participant) {
-          resolve({
-            success: true,
-            message: 'Participant found! Please mark attendance.',
-            participantName: participant.name,
-            participantEmail: participant.email,
-            timestamp: new Date().toLocaleString()
-          });
-        } else {
-          resolve({
-            success: false,
-            message: 'Invalid QR code or participant not found!',
-            participantName: null
-          });
-        }
-      }, 1000); // Simulate network delay
-    });
   };
 
   const markAttendance = async (isPresent) => {
-    if (!scannedResult || !scannedResult.success) return;
-
-    setIsProcessing(true);
+    if (!scannedResult || !scannedResult.qrCode) return;
 
     try {
-      // Send attendance data to backend
-      const attendanceData = {
-        qrCode: scannedResult.qrCode,
-        eventId: selectedEvent,
-        participantName: scannedResult.participantName,
-        participantEmail: scannedResult.participantEmail,
-        isPresent: isPresent,
-        timestamp: new Date().toISOString()
-      };
+      const response = await fetch(`${API_BASE_URL}/mark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          attendanceCode: scannedResult.qrCode,
+          isPresent: isPresent
+        }),
+        credentials: 'include'
+      });
 
-      // Simulate backend API call
-      await sendAttendanceToBackend(attendanceData);
-
-      // Update the result to show attendance has been marked
-      setScannedResult(prev => ({
-        ...prev,
-        isPresent: isPresent,
-        attendanceMarked: true,
-        message: isPresent ? 'Marked as Present!' : 'Marked as Absent!'
-      }));
-
-      // Update stats
-      setAttendanceStats(prev => ({
-        totalScanned: prev.totalScanned + 1,
-        presentCount: isPresent ? prev.presentCount + 1 : prev.presentCount,
-        absentCount: isPresent ? prev.absentCount : prev.absentCount + 1
-      }));
-
+      if (response.ok) {
+        setScannedResult(prev => ({
+          ...prev,
+          attendanceMarked: true,
+          currentStatus: isPresent,
+          message: `Successfully marked as ${isPresent ? 'PRESENT' : 'ABSENT'}`
+        }));
+      } else {
+        alert("Failed to update attendance.");
+      }
     } catch (error) {
-      console.error('Error marking attendance:', error);
-      alert('Error marking attendance. Please try again.');
-    } finally {
-      setIsProcessing(false);
+      alert("Network error while marking attendance.");
     }
   };
 
-  const sendAttendanceToBackend = async (attendanceData) => {
-    // Simulate backend API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('Sending to backend:', attendanceData);
-        resolve({ success: true });
-      }, 500);
-    });
+  // Function to restart the scanner after finishing a participant
+  const startNextScan = () => {
+    setScannedResult(null);
+    // The useEffect will re-initialize the scanner because scannedResult is null
   };
 
-  const clearResult = () => {
-    setScannedResult(null);
-  };
+  // --- Scanner Lifecycle ---
 
   useEffect(() => {
+    // Logic: Initialize scanner ONLY if an event is selected AND we don't have a result yet
+    if (selectedEvent && !scannedResult && !scannerRef.current) {
+      const scanner = new Html5QrcodeScanner(
+        "reader",
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          showTorchButtonIfSupported: true
+        },
+        /* verbose= */ false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          if (!isProcessing) {
+             verifyCode(decodedText);
+          }
+        }, 
+        (errorMessage) => {
+          // Ignore read errors
+        }
+      );
+
+      scannerRef.current = scanner;
+    }
+
+    // Cleanup
     return () => {
-      stopScanning();
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(error => console.error("Failed to clear scanner", error));
+        scannerRef.current = null;
+      }
     };
-  }, []);
+  }, [selectedEvent, scannedResult]); // Dependencies ensure scanner restarts when result is cleared
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Header */}
-      <div className="p-8 pb-0">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">QR Code Attendance Scanner</h2>
-            <p className="text-gray-600">Scan participant QR codes to mark attendance</p>
-          </div>
-          <div className="mt-4 md:mt-0">
-            <select
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white min-w-[200px]"
-            >
-              <option value="">Select Event</option>
-              {events.slice(0, 3).map((event) => (
-                <option key={event.id} value={event.id}>{event.title}</option>
-              ))}
-            </select>
-          </div>
+    <div className="bg-white min-h-screen p-6">
+      
+      {/* Header & Event Selection */}
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-center bg-gray-50 p-4 rounded-xl">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Mark Attendance</h2>
+          <p className="text-gray-500">Select an event to start scanning</p>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <div className="flex items-center">
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4">
-                <QrCode className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">{attendanceStats.totalScanned}</h3>
-                <p className="text-gray-600">Total Scanned</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-            <div className="flex items-center">
-              <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4">
-                <Check className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">{attendanceStats.presentCount}</h3>
-                <p className="text-gray-600">Present</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-            <div className="flex items-center">
-              <div className="bg-red-100 text-red-600 p-3 rounded-full mr-4">
-                <X className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">{attendanceStats.absentCount}</h3>
-                <p className="text-gray-600">Absent</p>
-              </div>
-            </div>
-          </div>
+        <div className="mt-4 md:mt-0">
+          <select
+            value={selectedEvent}
+            onChange={(e) => {
+              setSelectedEvent(e.target.value);
+              setScannedResult(null); // Reset when event changes
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white min-w-[250px]"
+          >
+            <option value="">-- Select Event --</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>{event.title}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Main Scanner Section */}
-      <div className="px-8 pb-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Scanner Controls */}
-          <div className="bg-gray-50 rounded-xl p-8 mb-8">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">QR Code Scanner</h3>
-              <p className="text-gray-600">Point the camera at the participant's QR code</p>
+      <div className="max-w-2xl mx-auto">
+        
+        {/* State 1: No Event Selected */}
+        {!selectedEvent && (
+            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed">
+                <QrCode className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900">No Event Selected</h3>
+                <p className="text-gray-500">Please select an event from the dropdown above</p>
             </div>
-            
-            {/* Camera Preview */}
-            <div className="relative mb-6">
-              <div className="bg-gray-200 rounded-lg overflow-hidden aspect-video flex items-center justify-center max-w-md mx-auto">
-                {isScanning ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-center text-gray-500">
-                    <Camera className="h-16 w-16 mx-auto mb-4" />
-                    <p className="text-lg font-medium">Camera Preview</p>
-                    <p className="text-sm">Click "Start Scanner" to begin</p>
-                  </div>
-                )}
-              </div>
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
+        )}
 
-            {/* Scanner Buttons */}
-            <div className="flex justify-center gap-4 mb-6">
-              <button
-                onClick={isScanning ? stopScanning : startScanning}
-                disabled={!selectedEvent}
-                className={`flex items-center gap-2 px-8 py-3 rounded-lg font-medium transition-colors ${
-                  !selectedEvent 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : isScanning 
-                      ? 'bg-red-500 hover:bg-red-600 text-white'
-                      : 'bg-primary-500 hover:bg-primary-600 text-white'
-                }`}
-              >
-                <Camera className="h-5 w-5" />
-                {isScanning ? 'Stop Scanner' : 'Start Scanner'}
-              </button>
-              
-              <button
-                onClick={simulateQRScan}
-                disabled={!selectedEvent}
-                className={`flex items-center gap-2 px-8 py-3 rounded-lg font-medium transition-colors ${
-                  !selectedEvent
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
-              >
-                <QrCode className="h-5 w-5" />
-                Simulate Scan
-              </button>
-            </div>
-
-            {!selectedEvent && (
-              <div className="text-center">
-                <p className="text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 inline-block">
-                  Please select an event to start scanning
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Scan Result Display */}
-          {(scannedResult || isProcessing) && (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-              {isProcessing ? (
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-                  <p className="text-lg font-medium text-gray-900">Processing...</p>
-                  <p className="text-gray-600">Please wait while we process the request</p>
+        {/* State 2: Scanning Mode (Only visible if selectedEvent is true AND no result yet) */}
+        {selectedEvent && !scannedResult && (
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div className="p-4 bg-gray-800 text-white text-center">
+                    <p className="font-medium">Camera Active</p>
+                    <p className="text-xs text-gray-400">Point at a QR Code</p>
                 </div>
-              ) : (
-                <div className="text-center">
-                  {/* Status Icon */}
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-                    scannedResult.success 
-                      ? scannedResult.attendanceMarked
-                        ? scannedResult.isPresent 
-                          ? 'bg-green-100 text-green-600' 
-                          : 'bg-red-100 text-red-600'
-                        : 'bg-blue-100 text-blue-600'
-                      : 'bg-red-100 text-red-600'
-                  }`}>
-                    {scannedResult.success ? (
-                      scannedResult.attendanceMarked ? (
-                        scannedResult.isPresent ? <Check className="h-8 w-8" /> : <X className="h-8 w-8" />
-                      ) : (
-                        <Users className="h-8 w-8" />
-                      )
-                    ) : (
-                      <X className="h-8 w-8" />
-                    )}
-                  </div>
-                  
-                  {/* Status Title */}
-                  <h3 className={`text-2xl font-bold mb-2 ${
-                    scannedResult.success 
-                      ? scannedResult.attendanceMarked
-                        ? scannedResult.isPresent 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                        : 'text-blue-600'
-                      : 'text-red-600'
-                  }`}>
-                    {scannedResult.success ? (
-                      scannedResult.attendanceMarked ? (
-                        scannedResult.isPresent ? 'Marked as Present!' : 'Marked as Absent!'
-                      ) : (
-                        'Participant Found!'
-                      )
-                    ) : (
-                      'Scan Failed'
-                    )}
-                  </h3>
-                  
-                  {/* Participant Info */}
-                  {scannedResult.participantName && (
-                    <div className="mb-4">
-                      <p className="text-xl font-semibold text-gray-900">{scannedResult.participantName}</p>
-                      {scannedResult.participantEmail && (
-                        <p className="text-gray-600">{scannedResult.participantEmail}</p>
-                      )}
-                      {scannedResult.timestamp && (
-                        <p className="text-sm text-gray-500 mt-2">
-                          Scanned at: {scannedResult.timestamp}
-                        </p>
-                      )}
+                <div className="p-4">
+                    <div id="reader" className="overflow-hidden rounded-lg"></div>
+                </div>
+                {isProcessing && (
+                    <div className="p-4 text-center text-primary-600 font-medium animate-pulse">
+                        Verifying Ticket...
                     </div>
-                  )}
-                  
-                  {/* Message */}
-                  <p className={`text-lg mb-6 ${
-                    scannedResult.success ? 'text-gray-700' : 'text-red-600'
-                  }`}>
-                    {scannedResult.message}
-                  </p>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-center gap-4">
-                    {scannedResult.success && !scannedResult.attendanceMarked ? (
-                      <>
-                        <button
-                          onClick={() => markAttendance(true)}
-                          className="flex items-center gap-2 px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
-                        >
-                          <Check className="h-5 w-5" />
-                          Mark as Present
-                        </button>
-                        <button
-                          onClick={() => markAttendance(false)}
-                          className="flex items-center gap-2 px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
-                        >
-                          <X className="h-5 w-5" />
-                          Mark as Absent
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={clearResult}
-                        className="px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
-                      >
-                        Scan Next
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
             </div>
-          )}
-        </div>
+        )}
+
+        {/* State 3: Result Mode (Replaces Scanner) */}
+        {scannedResult && (
+            <div className="bg-white border rounded-xl shadow-lg p-8 text-center animate-fade-in">
+                <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 ${
+                    scannedResult.success 
+                    ? (scannedResult.attendanceMarked ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600')
+                    : 'bg-red-100 text-red-600'
+                }`}>
+                    {scannedResult.success ? <Check className="h-12 w-12" /> : <AlertCircle className="h-12 w-12" />}
+                </div>
+
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    {scannedResult.success ? scannedResult.participantName : 'Scan Failed'}
+                </h3>
+                
+                <p className={`text-lg mb-6 ${scannedResult.success ? 'text-gray-600' : 'text-red-500 font-medium'}`}>
+                    {scannedResult.message}
+                </p>
+
+                {scannedResult.success && (
+                    <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left border border-gray-100">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Email</p>
+                                <p className="font-medium text-gray-900 break-all">{scannedResult.participantEmail}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Current Status</p>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    scannedResult.currentStatus ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                }`}>
+                                    {scannedResult.currentStatus ? 'Checked In' : 'Not Checked In'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {/* Action Buttons */}
+                    {scannedResult.success && !scannedResult.attendanceMarked && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                onClick={() => markAttendance(true)}
+                                className="flex items-center justify-center gap-2 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-md"
+                            >
+                                <Check className="h-5 w-5" /> Mark Present
+                            </button>
+                            <button
+                                onClick={() => markAttendance(false)}
+                                className="flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-md"
+                            >
+                                <X className="h-5 w-5" /> Mark Absent
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Reset Button (Always visible in result mode) */}
+                    <button
+                        onClick={startNextScan}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors border border-gray-200"
+                    >
+                        <RefreshCw className="h-5 w-5" />
+                        {scannedResult.attendanceMarked ? "Scan Next Person" : "Cancel & Scan Next"}
+                    </button>
+                </div>
+            </div>
+        )}
+
       </div>
     </div>
   );
