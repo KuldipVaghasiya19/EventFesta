@@ -35,9 +35,15 @@ const EventDetailPage = () => {
           return;
         }
         
-        const eventData = await response.json();
+        const responseData = await response.json();
 
-      
+        // --- FIX: Unwrap the new ApiResponse structure ---
+        const eventData = responseData.success !== undefined ? responseData.data : responseData;
+        
+        if (!eventData) {
+          setError("Event data is empty");
+          return;
+        }
         
         // This transformation now correctly includes the organizer object
         const transformedEvent = {
@@ -57,7 +63,7 @@ const EventDetailPage = () => {
         };
         
         setEvent(transformedEvent);
-        document.title = `${transformedEvent.title} - TechEvents`;
+        document.title = `${transformedEvent.title || 'Event Details'} - TechEvents`;
         
       } catch (err) {
         console.error('Error fetching event:', err);

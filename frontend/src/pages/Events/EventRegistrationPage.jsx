@@ -16,7 +16,6 @@ const AlreadyRegisteredPage = ({ event }) => (
     </div>
 );
 
-
 const EventRegistrationPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -28,13 +27,14 @@ const EventRegistrationPage = () => {
     const [user, setUser] = useState(null);
     const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
-
     useEffect(() => {
         const storedUser = localStorage.getItem('techevents_user') || sessionStorage.getItem('techevents_user');
         if (storedUser) {
             try {
-                const userData = JSON.parse(storedUser);
-                setUser(userData);
+                // Also unwrapping here just in case localStorage saved the wrapped version
+                const parsed = JSON.parse(storedUser);
+                const actualUser = parsed.success !== undefined ? parsed.data : parsed;
+                setUser(actualUser);
             } catch (error) {
                 console.error('Error parsing user data:', error);
                 setUser(null);
@@ -54,7 +54,12 @@ const EventRegistrationPage = () => {
                 if (!eventResponse.ok) {
                     throw new Error(eventResponse.status === 404 ? 'Event not found' : 'Failed to fetch event details');
                 }
-                const eventData = await eventResponse.json();
+                
+                const rawEventData = await eventResponse.json();
+                
+                // --- FIX 1: Unwrap the ApiResponse for Event Details ---
+                const eventData = rawEventData.success !== undefined ? rawEventData.data : rawEventData;
+
                 const transformedEvent = {
                     ...eventData,
                     id: eventData.id,
@@ -67,15 +72,30 @@ const EventRegistrationPage = () => {
                     type: eventData.type || 'Tech Event',
                     organizer: eventData.organizer ? eventData.organizer.name : 'Event Organizer'
                 };
+                
                 setEvent(transformedEvent);
                 document.title = `Register for ${transformedEvent.title} - EventFesta`;
 
                 // Check registration status if user is logged in
-                if (user) {
-                    const regResponse = await fetch(`http://localhost:8080/api/participants/${user.id}/events/${id}/is-registered`);
+                if (user && user.id) {
+                    // --- FIX 2: Added credentials: 'include' to prevent 403 Forbidden ---
+                    const regResponse = await fetch(`http://localhost:8080/api/participants/${user.id}/events/${id}/is-registered`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include' 
+                    });
+                    
                     if (regResponse.ok) {
-                        const { isRegistered } = await regResponse.json();
-                        setIsAlreadyRegistered(isRegistered);
+                        const rawRegData = await regResponse.json();
+                        // --- FIX 3: Unwrap ApiResponse for Registration Check ---
+                        const payload = rawRegData.success !== undefined ? rawRegData.data : rawRegData;
+                        
+                        // Handle both boolean directly or an object like { isRegistered: true }
+                        const registeredStatus = typeof payload === 'object' && payload !== null 
+                            ? payload.isRegistered 
+                            : payload;
+                            
+                        setIsAlreadyRegistered(!!registeredStatus);
                     }
                 }
             } catch (err) {
@@ -120,7 +140,16 @@ const EventRegistrationPage = () => {
                     body: JSON.stringify(formData),
                     credentials: 'include',
                 });
-                if (!response.ok) throw new Error(await response.text() || 'Free registration failed.');
+                
+                // Read as text first to avoid JSON parse errors on pure text responses
+                const textResult = await response.text();
+                let jsonResult;
+                try { jsonResult = JSON.parse(textResult); } catch (e) { /* Ignore */ }
+                
+                if (!response.ok) {
+                    const errorMsg = jsonResult?.message || textResult || 'Free registration failed.';
+                    throw new Error(errorMsg);
+                }
                 
                 setRegistrationStatus({ type: 'success', message: 'Registration Successful!', details: 'Check your email for your QR code and event details.' });
                 setTimeout(() => navigate('/dashboard/participant'), 4000);
@@ -135,25 +164,26 @@ const EventRegistrationPage = () => {
 
         // --- Flow for PAID events ---
         try {
-            // Create the order, now sending participant and event IDs for pre-check
             const orderResponse = await fetch(`http://localhost:8080/api/payment/create-order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     amount: registrationFee,
-                    participantId: user.id, // Send participantId for the check
-                    eventId: id             // Send eventId for the check
+                    participantId: user.id,
+                    eventId: id             
                 }),
                 credentials: 'include'
             });
 
+            const orderRawData = await orderResponse.json();
+            
             if (!orderResponse.ok) {
-                // This will now catch the 409 Conflict error from the backend
-                const errorData = await orderResponse.json();
-                throw new Error(errorData.error || 'Failed to create payment order.');
+                const errorMessage = orderRawData.message || orderRawData.error || 'Failed to create payment order.';
+                throw new Error(errorMessage);
             }
             
-            const orderData = await orderResponse.json();
+            // Unwrap if it's wrapped in ApiResponse
+            const orderData = orderRawData.success !== undefined ? orderRawData.data : orderRawData;
             
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID, 
@@ -181,17 +211,19 @@ const EventRegistrationPage = () => {
                             credentials: 'include'
                         });
 
-                        const result = await verifyResponse.json();
+                        const resultRaw = await verifyResponse.json();
+                        const result = resultRaw.success !== undefined ? resultRaw.data : resultRaw;
                         
-                        if (verifyResponse.ok && result.status === 'success') {
+                        // Check ok status OR the custom success flag
+                        if (verifyResponse.ok && (result.status === 'success' || resultRaw.success)) {
                             setRegistrationStatus({
                                 type: 'success',
                                 message: 'Payment & Registration Successful!',
-                                details: result.message || 'Check your email for event details.'
+                                details: resultRaw.message || result.message || 'Check your email for event details.'
                             });
                             setTimeout(() => navigate('/dashboard/participant'), 4000);
                         } else {
-                            throw new Error(result.message || 'Verification or final registration failed.');
+                            throw new Error(resultRaw.message || result.message || 'Verification or final registration failed.');
                         }
                     } catch (err) {
                         setRegistrationStatus({
@@ -212,7 +244,7 @@ const EventRegistrationPage = () => {
                     message: 'Payment Failed!',
                     details: response.error.description || 'Please try again.'
                 });
-                setIsSubmitting(false); // Re-enable the button on failure
+                setIsSubmitting(false); 
             });
             rzp1.open();
 

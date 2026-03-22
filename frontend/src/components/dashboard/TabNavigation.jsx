@@ -20,31 +20,36 @@ const TabNavigation = ({ activeTab, onTabChange, type = "participant" }) => {
   };
 
   return (
-    <div className="bg-white rounded-t-xl shadow-sm border-b">
-      <div className="container mx-auto px-8">
-        <nav className="flex">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+    <div className="w-full overflow-x-auto hide-scrollbar border-b border-gray-100 dark:border-navy-700 bg-white/50 dark:bg-navy-800/50 backdrop-blur-md">
+      <div className="flex px-4 sm:px-6 gap-3 py-3">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          
+          // Thematic styling based on user type
+          const activeClasses = type === 'participant' 
+            ? 'bg-purple-50 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 shadow-sm ring-1 ring-purple-200 dark:ring-purple-500/30' 
+            : 'bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-300 shadow-sm ring-1 ring-green-200 dark:ring-green-500/30';
             
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className={`flex items-center gap-2 py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
-                  isActive
-                    ? type === 'participant' 
-                      ? 'border-purple-500 text-purple-600 bg-purple-50'
-                      : 'border-green-500 text-green-600 bg-green-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+          const inactiveClasses = 'text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-navy-700/50 border border-transparent';
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleTabClick(tab.id)}
+              className={`flex items-center gap-2.5 py-2.5 px-5 text-sm font-semibold rounded-xl transition-all duration-300 ease-out whitespace-nowrap ${
+                isActive ? activeClasses : inactiveClasses
+              }`}
+            >
+              <Icon 
+                className={`h-4 w-4 transition-transform duration-300 ${
+                  isActive ? 'scale-110' : 'scale-100 opacity-70'
+                }`} 
+              />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

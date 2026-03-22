@@ -46,33 +46,37 @@ const OrganizationDashboard = () => {
       return null;
     };
 
-    const userData = getOrganizationData();
+    const rawUserData = getOrganizationData();
     
-    if (userData) {
+    // --- FIX: Unwrap the new ApiResponse structure { success, message, data } ---
+    // If the data is wrapped in the new response format, extract the actual user details from '.data'
+    const actualUser = rawUserData?.success !== undefined ? rawUserData.data : rawUserData;
+    
+    if (actualUser) {
       // Verify it's an organization user
-      if (userData.role === 'ORGANIZATION') {
+      if (actualUser.role === 'ORGANIZATION') {
         // Transform backend data to match component expectations
         const transformedData = {
-          id: userData.id,
-          name: userData.name,
-          role: userData.type || 'Organization',
-          avatar: userData.profileImageUrl || 'https://images.pexels.com/photos/2977547/pexels-photo-2977547.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-          email: userData.email,
-          location: userData.location,
-          organization: userData.since ? `Founded ${userData.since}` : 'Organization',
-          about: userData.about,
-          contact: userData.contact,
-          totalOrganizedEvents: userData.totalOrganizedEvents || 0,
-          type: userData.type,
-          profileImagePublicId: userData.profileImagePublicId
+          id: actualUser.id,
+          name: actualUser.name,
+          role: actualUser.type || 'Organization',
+          avatar: actualUser.profileImageUrl || 'https://images.pexels.com/photos/2977547/pexels-photo-2977547.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+          email: actualUser.email,
+          location: actualUser.location,
+          organization: actualUser.since ? `Founded ${actualUser.since}` : 'Organization',
+          about: actualUser.about,
+          contact: actualUser.contact,
+          totalOrganizedEvents: actualUser.totalOrganizedEvents || 0,
+          type: actualUser.type,
+          profileImagePublicId: actualUser.profileImagePublicId
         };
         
         setOrganization(transformedData);
         
         // Set the organization's events
-        if (userData.organizedEvents && Array.isArray(userData.organizedEvents)) {
+        if (actualUser.organizedEvents && Array.isArray(actualUser.organizedEvents)) {
           // Transform events to match your component's expected format
-          const transformedEvents = userData.organizedEvents.map(event => ({
+          const transformedEvents = actualUser.organizedEvents.map(event => ({
             id: event.id,
             title: event.title,
             description: event.description,
@@ -92,11 +96,10 @@ const OrganizationDashboard = () => {
             judges: event.judges || [],
             prizes: event.prizes || {},
             schedule: event.schedule || [],
-            // Add any other fields your components expect
             organizer: {
-              id: userData.id,
-              name: userData.name,
-              avatar: userData.profileImageUrl
+              id: actualUser.id,
+              name: actualUser.name,
+              avatar: actualUser.profileImageUrl
             }
           })).sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
           
@@ -105,7 +108,7 @@ const OrganizationDashboard = () => {
           setOrganizationEvents([]);
         }
         
-        document.title = `${userData.name} Dashboard - TechEvents`;
+        document.title = `${actualUser.name} Dashboard - TechEvents`;
       } else {
         // User is not an organization, redirect to appropriate dashboard
         navigate('/participant/dashboard', { replace: true });
@@ -124,9 +127,13 @@ const OrganizationDashboard = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="pt-20 pb-16 min-h-screen bg-gray-50 dark:bg-navy-900 transition-colors duration-300">
-        <div className="flex items-center justify-center min-h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="pt-20 pb-16 min-h-screen bg-gray-50 dark:bg-navy-900 transition-colors duration-300 flex items-center justify-center">
+        <div className="bg-white dark:bg-navy-800 p-8 rounded-2xl shadow-xl flex flex-col items-center space-y-4">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-14 w-14 border-y-2 border-green-500"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-8 w-8 bg-green-100 dark:bg-green-900/30 rounded-full"></div>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 font-medium animate-pulse">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -135,17 +142,19 @@ const OrganizationDashboard = () => {
   // Show error if no organization data
   if (!organization) {
     return (
-      <div className="pt-20 pb-16 min-h-screen bg-gray-50 dark:bg-navy-900 transition-colors duration-300">
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Unable to load organization data</p>
-            <Link 
-              to="/login?role=organization"
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Back to Login
-            </Link>
+      <div className="pt-20 pb-16 min-h-screen bg-gray-50 dark:bg-navy-900 transition-colors duration-300 flex items-center justify-center">
+        <div className="bg-white dark:bg-navy-800 p-8 rounded-2xl shadow-xl text-center max-w-md w-full mx-4 border border-gray-100 dark:border-navy-700">
+          <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Settings className="h-8 w-8" />
           </div>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Data Unavailable</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">We were unable to load your organization profile data.</p>
+          <Link 
+            to="/login?role=organization"
+            className="inline-flex px-6 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-all duration-300 shadow-lg shadow-green-600/20 hover:-translate-y-0.5"
+          >
+            Back to Login
+          </Link>
         </div>
       </div>
     );
@@ -155,33 +164,41 @@ const OrganizationDashboard = () => {
     switch (activeTab) {
       case 'events':
         return (
-          <EventsSection 
-            events={organizationEvents} 
-            userType="organization" 
-            organization={organization} 
-          />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <EventsSection 
+              events={organizationEvents} 
+              userType="organization" 
+              organization={organization} 
+            />
+          </div>
         );
       case 'attendance':
         return (
-          <AttendanceSection 
-            events={organizationEvents} 
-            organization={organization} 
-          />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <AttendanceSection 
+              events={organizationEvents} 
+              organization={organization} 
+            />
+          </div>
         );
       case 'analytics':
         return (
-          <AnalyticsSection 
-            events={organizationEvents} 
-            organization={organization} 
-          />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <AnalyticsSection 
+              events={organizationEvents} 
+              organization={organization} 
+            />
+          </div>
         );
       default:
         return (
-          <EventsSection 
-            events={organizationEvents} 
-            userType="organization" 
-            organization={organization} 
-          />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <EventsSection 
+              events={organizationEvents} 
+              userType="organization" 
+              organization={organization} 
+            />
+          </div>
         );
     }
   };
@@ -191,35 +208,41 @@ const OrganizationDashboard = () => {
       {/* Profile Section */}
       <ProfileSection 
         user={organization} 
-        coverGradient="from-green-600 to-blue-700"
+        coverGradient="from-green-600 via-emerald-600 to-teal-700"
         type="organization"
       />
 
-      <div className="container mx-auto px-4 md:px-6 -mt-8 relative z-10">
-        <div className="bg-white dark:bg-navy-800 rounded-xl shadow-sm dark:shadow-dark overflow-hidden">
-          {/* Tab Navigation with Action Buttons */}
-          <div className="flex justify-between items-center bg-white dark:bg-navy-800 rounded-t-xl shadow-sm border-b dark:border-navy-600">
-            <TabNavigation 
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              type="organization"
-            />
+      {/* Main Content Dashboard Layout */}
+      <div className="container mx-auto px-4 md:px-6 -mt-12 relative z-10 transition-all duration-500 ease-in-out">
+        <div className="bg-white dark:bg-navy-800 rounded-2xl shadow-xl dark:shadow-dark border border-gray-100 dark:border-navy-700 overflow-hidden flex flex-col min-h-[500px]">
+          
+          {/* Header Controls Area */}
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white dark:bg-navy-800 border-b border-gray-100 dark:border-navy-700">
+            <div className="flex-1">
+              <TabNavigation 
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                type="organization"
+              />
+            </div>
             
-            <div className="flex items-center gap-3 px-6 py-3">
+            <div className="flex items-center justify-end p-4 sm:p-0 sm:pr-6 bg-gray-50/50 sm:bg-transparent dark:bg-navy-800/50 sm:dark:bg-transparent">
               {activeTab === 'events' && (
                 <Link
                   to="/events/create"
-                  className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm font-medium"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/40 hover:-translate-y-0.5 font-semibold text-sm"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-5 w-5" />
                   Create New Event
                 </Link>
               )}
             </div>
           </div>
 
-          {/* Content */}
-          {renderContent()}
+          {/* Dynamic Content Area */}
+          <div className="flex-1 bg-gray-50/30 dark:bg-navy-900/20">
+            {renderContent()}
+          </div>
         </div>
       </div>
     </div>

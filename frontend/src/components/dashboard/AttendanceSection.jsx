@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { QrCode, Users, Check, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { QrCode, Users, Check, X, AlertCircle, RefreshCw, Camera } from 'lucide-react';
 
 const AttendanceSection = ({ events }) => {
   const [selectedEvent, setSelectedEvent] = useState('');
@@ -28,33 +28,36 @@ const AttendanceSection = ({ events }) => {
 
       // 2. Safe JSON Parsing
       const contentType = response.headers.get("content-type");
-      let data;
+      let apiResponse;
       if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
+        apiResponse = await response.json();
       } else {
         const text = await response.text();
-        data = { message: text || "Unknown error occurred" };
+        apiResponse = { success: response.ok, message: text || "Unknown error occurred", data: null };
       }
 
-      console.log("Backend Response:", data);
+      console.log("Backend Response:", apiResponse);
 
       // 3. Handle Success/Error
-      if (response.ok) {
+      if (response.ok && apiResponse.success !== false) {
+        // Extract the actual data payload
+        const payload = apiResponse.data || apiResponse;
+
         // Validation: Check if ticket belongs to selected event
-        if (data.eventId && data.eventId !== selectedEvent) {
+        if (payload.eventId && payload.eventId !== selectedEvent) {
            setScannedResult({
             success: false,
-            message: `Wrong Event! Ticket is for: ${data.eventName || 'Unknown Event'}`,
+            message: `Wrong Event! Ticket is for: ${payload.eventName || 'Unknown Event'}`,
             qrCode: qrCode
           });
         } else {
           // SUCCESS: Set data to state
           setScannedResult({
             success: true,
-            participantName: data.participantName,
-            participantEmail: data.registeredEmail,
-            currentStatus: data.isPresent,
-            message: 'Participant Found!',
+            participantName: payload.participantName,
+            participantEmail: payload.registeredEmail || payload.email, 
+            currentStatus: payload.isPresent,
+            message: apiResponse.message || 'Participant Found!',
             qrCode: qrCode,
             attendanceMarked: false
           });
@@ -69,7 +72,7 @@ const AttendanceSection = ({ events }) => {
         // FAIL: Show error message
         setScannedResult({
           success: false,
-          message: data.message || 'Invalid QR Code',
+          message: apiResponse.message || 'Invalid or Expired QR Code',
           qrCode: qrCode
         });
         
@@ -83,7 +86,7 @@ const AttendanceSection = ({ events }) => {
       console.error("Network Error:", error);
       setScannedResult({
         success: false,
-        message: 'Network error. Is backend running?',
+        message: 'Network error. Is the backend running?',
         qrCode: qrCode
       });
       if (scannerRef.current) {
@@ -108,32 +111,32 @@ const AttendanceSection = ({ events }) => {
         credentials: 'include'
       });
 
-      if (response.ok) {
+      const apiResponse = await response.json();
+
+      if (response.ok && apiResponse.success !== false) {
         setScannedResult(prev => ({
           ...prev,
           attendanceMarked: true,
           currentStatus: isPresent,
-          message: `Successfully marked as ${isPresent ? 'PRESENT' : 'ABSENT'}`
+          message: apiResponse.message || `Successfully marked as ${isPresent ? 'PRESENT' : 'ABSENT'}`
         }));
       } else {
-        alert("Failed to update attendance.");
+        alert(apiResponse.message || "Failed to update attendance.");
       }
     } catch (error) {
       alert("Network error while marking attendance.");
     }
   };
 
-  // Function to restart the scanner after finishing a participant
   const startNextScan = () => {
     setScannedResult(null);
-    // The useEffect will re-initialize the scanner because scannedResult is null
   };
 
   // --- Scanner Lifecycle ---
 
   useEffect(() => {
-    // Logic: Initialize scanner ONLY if an event is selected AND we don't have a result yet
     if (selectedEvent && !scannedResult && !scannerRef.current) {
+      // Kept exactly as your original code so the upload and camera logic remains untouched
       const scanner = new Html5QrcodeScanner(
         "reader",
         { 
@@ -142,7 +145,7 @@ const AttendanceSection = ({ events }) => {
           aspectRatio: 1.0,
           showTorchButtonIfSupported: true
         },
-        /* verbose= */ false
+        false
       );
 
       scanner.render(
@@ -159,34 +162,36 @@ const AttendanceSection = ({ events }) => {
       scannerRef.current = scanner;
     }
 
-    // Cleanup
     return () => {
       if (scannerRef.current) {
         scannerRef.current.clear().catch(error => console.error("Failed to clear scanner", error));
         scannerRef.current = null;
       }
     };
-  }, [selectedEvent, scannedResult]); // Dependencies ensure scanner restarts when result is cleared
+  }, [selectedEvent, scannedResult]);
 
   return (
-    <div className="bg-white min-h-screen p-6">
+    <div className="p-6 sm:p-8 w-full">
       
       {/* Header & Event Selection */}
-      <div className="mb-8 flex flex-col md:flex-row justify-between items-center bg-gray-50 p-4 rounded-xl">
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-navy-800 p-6 rounded-2xl border border-gray-100 dark:border-navy-700 shadow-sm gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Mark Attendance</h2>
-          <p className="text-gray-500">Select an event to start scanning</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <QrCode className="h-6 w-6 text-green-500" />
+            Scanner Gateway
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Select an event to start processing arrivals</p>
         </div>
-        <div className="mt-4 md:mt-0">
+        <div className="w-full md:w-auto">
           <select
             value={selectedEvent}
             onChange={(e) => {
               setSelectedEvent(e.target.value);
-              setScannedResult(null); // Reset when event changes
+              setScannedResult(null);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white min-w-[250px]"
+            className="w-full md:w-72 px-4 py-3 border border-gray-200 dark:border-navy-600 rounded-xl focus:ring-2 focus:ring-green-500 outline-none bg-gray-50 dark:bg-navy-900 text-gray-800 dark:text-gray-200 font-medium transition-all shadow-inner"
           >
-            <option value="">-- Select Event --</option>
+            <option value="">-- Select Active Event --</option>
             {events.map((event) => (
               <option key={event.id} value={event.id}>{event.title}</option>
             ))}
@@ -194,99 +199,112 @@ const AttendanceSection = ({ events }) => {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         
         {/* State 1: No Event Selected */}
         {!selectedEvent && (
-            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed">
-                <QrCode className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No Event Selected</h3>
-                <p className="text-gray-500">Please select an event from the dropdown above</p>
+            <div className="text-center py-16 px-6 bg-gray-50/50 dark:bg-navy-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-navy-700 transition-all">
+                <div className="w-20 h-20 bg-white dark:bg-navy-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <Camera className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready to Scan</h3>
+                <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                  Please select an event from the dropdown above to activate the camera and begin check-ins.
+                </p>
             </div>
         )}
 
-        {/* State 2: Scanning Mode (Only visible if selectedEvent is true AND no result yet) */}
+        {/* State 2: Scanning Mode */}
         {selectedEvent && !scannedResult && (
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="p-4 bg-gray-800 text-white text-center">
-                    <p className="font-medium">Camera Active</p>
-                    <p className="text-xs text-gray-400">Point at a QR Code</p>
+            <div className="bg-white dark:bg-navy-800 rounded-3xl shadow-xl border border-gray-100 dark:border-navy-700 relative">
+                <div className="p-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white text-center flex justify-between items-center rounded-t-3xl">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
+                      <p className="font-semibold text-sm tracking-wide">SCANNER ACTIVE</p>
+                    </div>
+                    <p className="text-xs text-gray-400 font-medium bg-white/10 px-3 py-1 rounded-full">Camera or Upload</p>
                 </div>
-                <div className="p-4">
-                    <div id="reader" className="overflow-hidden rounded-lg"></div>
+                
+                {/* FIX: Removed 'overflow-hidden' and 'bg-black' to ensure the default file upload UI renders fully */}
+                <div className="p-4 sm:p-8 bg-gray-50 dark:bg-navy-900/50 rounded-b-3xl">
+                    <div id="reader" className="mx-auto w-full max-w-lg border-0"></div>
                 </div>
+
                 {isProcessing && (
-                    <div className="p-4 text-center text-primary-600 font-medium animate-pulse">
-                        Verifying Ticket...
+                    <div className="absolute inset-0 bg-white/80 dark:bg-navy-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-3xl">
+                        <div className="animate-spin rounded-full h-16 w-16 border-y-4 border-green-500 mb-4"></div>
+                        <p className="text-gray-900 dark:text-white font-bold text-lg animate-pulse">Verifying Ticket...</p>
                     </div>
                 )}
             </div>
         )}
 
-        {/* State 3: Result Mode (Replaces Scanner) */}
+        {/* State 3: Result Mode */}
         {scannedResult && (
-            <div className="bg-white border rounded-xl shadow-lg p-8 text-center animate-fade-in">
-                <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 ${
+            <div className="bg-white dark:bg-navy-800 border border-gray-100 dark:border-navy-700 rounded-3xl shadow-xl p-8 sm:p-10 text-center animate-in fade-in zoom-in-95 duration-300">
+                <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg ${
                     scannedResult.success 
-                    ? (scannedResult.attendanceMarked ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600')
-                    : 'bg-red-100 text-red-600'
+                    ? (scannedResult.attendanceMarked ? 'bg-green-100 text-green-600 shadow-green-500/20' : 'bg-blue-100 text-blue-600 shadow-blue-500/20')
+                    : 'bg-red-100 text-red-600 shadow-red-500/20'
                 }`}>
-                    {scannedResult.success ? <Check className="h-12 w-12" /> : <AlertCircle className="h-12 w-12" />}
+                    {scannedResult.success ? <Check className="h-10 w-10 stroke-[3]" /> : <AlertCircle className="h-10 w-10 stroke-[3]" />}
                 </div>
 
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                <h3 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
                     {scannedResult.success ? scannedResult.participantName : 'Scan Failed'}
                 </h3>
                 
-                <p className={`text-lg mb-6 ${scannedResult.success ? 'text-gray-600' : 'text-red-500 font-medium'}`}>
+                <p className={`text-lg mb-8 font-medium ${scannedResult.success ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'}`}>
                     {scannedResult.message}
                 </p>
 
                 {scannedResult.success && (
-                    <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left border border-gray-100">
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 dark:bg-navy-900/50 rounded-2xl p-6 mb-8 text-left border border-gray-100 dark:border-navy-700 shadow-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Email</p>
-                                <p className="font-medium text-gray-900 break-all">{scannedResult.participantEmail}</p>
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Registered Email</p>
+                                <p className="font-semibold text-gray-900 dark:text-gray-200 break-all">{scannedResult.participantEmail}</p>
                             </div>
                             <div>
-                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Current Status</p>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    scannedResult.currentStatus ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Current Status</p>
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                                    scannedResult.currentStatus 
+                                      ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' 
+                                      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
                                 }`}>
-                                    {scannedResult.currentStatus ? 'Checked In' : 'Not Checked In'}
+                                    {scannedResult.currentStatus ? 'Already Checked In' : 'Pending Check-In'}
                                 </span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-4 max-w-lg mx-auto">
                     {/* Action Buttons */}
                     {scannedResult.success && !scannedResult.attendanceMarked && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button
                                 onClick={() => markAttendance(true)}
-                                className="flex items-center justify-center gap-2 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-md"
+                                className="flex items-center justify-center gap-2 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all transform hover:-translate-y-1 shadow-lg shadow-green-500/30"
                             >
                                 <Check className="h-5 w-5" /> Mark Present
                             </button>
                             <button
                                 onClick={() => markAttendance(false)}
-                                className="flex items-center justify-center gap-2 py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-md"
+                                className="flex items-center justify-center gap-2 py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all transform hover:-translate-y-1 shadow-lg shadow-red-500/30"
                             >
                                 <X className="h-5 w-5" /> Mark Absent
                             </button>
                         </div>
                     )}
 
-                    {/* Reset Button (Always visible in result mode) */}
+                    {/* Reset Button */}
                     <button
                         onClick={startNextScan}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors border border-gray-200"
+                        className="w-full flex items-center justify-center gap-2 py-4 bg-white dark:bg-navy-800 hover:bg-gray-50 dark:hover:bg-navy-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition-all border-2 border-gray-200 dark:border-navy-600 hover:border-gray-300 dark:hover:border-navy-500"
                     >
                         <RefreshCw className="h-5 w-5" />
-                        {scannedResult.attendanceMarked ? "Scan Next Person" : "Cancel & Scan Next"}
+                        {scannedResult.attendanceMarked ? "Scan Next Participant" : "Cancel & Scan Next"}
                     </button>
                 </div>
             </div>

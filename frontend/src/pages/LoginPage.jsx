@@ -88,8 +88,8 @@ const LoginPage = () => {
       }
 
       if (isJson) {
-        const userData = await response.json();
-        return userData;
+        const apiResponse = await response.json();
+        return apiResponse.data;
       } else {
         throw new Error('Expected JSON response but received non-JSON content');
       }
